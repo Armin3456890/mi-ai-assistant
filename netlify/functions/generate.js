@@ -1,5 +1,5 @@
 
-exports.handler = async (event) => {
+exports.handler = async function (event) {
   const headers = {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
@@ -7,7 +7,7 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Methods": "POST, OPTIONS"
   };
 
-  const respond = (statusCode, data) => ({
+  const reply = (statusCode, data) => ({
     statusCode,
     headers,
     body: JSON.stringify(data)
@@ -18,40 +18,31 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod !== "POST") {
-    return respond(405, {
-      error: "فقط درخواست POST پذیرفته می‌شود."
-    });
+    return reply(405, { error: "فقط درخواست POST پشتیبانی می‌شود." });
+  }
+
+  let body;
+  try {
+    body = JSON.parse(event.body || "{}");
+  } catch (_) {
+    return reply(400, { error: "داده ارسالی معتبر نیست." });
+  }
+
+  const action = body.action || body.mode || "chat";
+  const prompt = String(body.prompt || body.message || "").trim();
+
+  if (!prompt) {
+    return reply(400, { error: "متن درخواست خالی است." });
   }
 
   try {
-    const data = JSON.parse(event.body || "{}");
-    const action = String(
-      data.action || data.mode || "chat"
-    ).toLowerCase();
-
-    // بخش ساخت تصویر
+    // ساخت تصویر با Hugging Face
     if (action === "image") {
-      const hfToken = process.env.HF_TOKEN;
+      const token = process.env.HF_TOKEN;
 
-      if (!hfToken) {
-        return respond(500, {
-          error: "متغیر HF_TOKEN در Netlify تنظیم نشده است."
-        });
-      }
-
-      const prompt = String(
-        data.prompt || data.message || ""
-      ).trim();
-
-      if (!prompt) {
-        return respond(400, {
-          error: "توضیحات تصویر را وارد کن."
-        });
-      }
-
-      if (prompt.length > 2000) {
-        return respond(413, {
-          error: "توضیحات تصویر بیش از حد طولانی است."
+      if (!token) {
+        return reply(500, {
+          error: "متغیر HF_TOKEN در تنظیمات Netlify تنظیم نشده است."
         });
       }
 
@@ -60,165 +51,124 @@ exports.handler = async (event) => {
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${hfToken}`,
-            "Content-Type": "application/json"
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "Accept": "image/*"
           },
           body: JSON.stringify({
             inputs: prompt,
             parameters: {
               width: 512,
-              height: 512,
-              num_inference_steps: 20
+              height: 512
             }
           })
         }
       );
 
       if (!imageResponse.ok) {
-        const rawError = await imageResponse.text();
-        let detail = rawError;
-
-        try {
-          const parsed = JSON.parse(rawError);
-          detail =
-            parsed.error ||
-            parsed.message ||
-            parsed.detail ||
-            rawError;
-        } catch (_) {}
-
-        if (typeof detail !== "string") {
-          detail = JSON.stringify(detail);
-        }
-
-        return respond(imageResponse.status, {
-          error: "سرویس ساخت تصویر: " + detail.slice(0, 1000)
+        const details = await imageResponse.text();
+        return reply(imageResponse.status, {
+          error: "سرویس ساخت تصویر خطا داد.",
+          details: details.slice(0, 1200)
         });
       }
 
-      const contentType =
-        imageResponse.headers.get("content-type") || "";
+      const contentType = imageResponse.headers.get("content-type") || "";
 
       if (!contentType.startsWith("image/")) {
-        const raw = await imageResponse.text();
-
-        return respond(502, {
-          error:
-            "سرویس به‌جای تصویر، پاسخ دیگری فرستاد: " +
-            raw.slice(0, 500)
+        const details = await imageResponse.text();
+        return reply(502, {
+          error: "سرویس به‌جای تصویر، پاسخ دیگری برگرداند.",
+          details: details.slice(0, 1000)
         });
       }
 
-      const imageBuffer = Buffer.from(
-        await imageResponse.arrayBuffer()
-      );
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const imageBase64 = imageBuffer.toString("base64");
 
-      if (!imageBuffer.length) {
-        return respond(502, {
-          error: "تصویر خالی دریافت شد."
-        });
-      }
-
-      return respond(200, {
-        image:
-          `data:${contentType};base64,` +
-          imageBuffer.toString("base64"),
+      return reply(200, {
+        image: "data:" + contentType + ";base64," + imageBase64,
         provider: "Hugging Face"
       });
     }
 
-    // بخش چت Groq
-    const groqKey = process.env.GROQ_API_KEY;
+    // چت هوشمند با Groq
+    if (action === "chat" || action === "text") {
+      const apiKey = process.env.GROQ_API_KEY;
 
-    if (!groqKey) {
-      return respond(500, {
-        error: "کلید GROQ_API_KEY در Netlify پیدا نشد."
-      });
-    }
-
-    const prompt = String(
-      data.message || data.prompt || data.text || ""
-    ).trim();
-
-    if (!prompt) {
-      return respond(400, {
-        error: "پیام خالی است."
-      });
-    }
-
-    if (prompt.length > 12000) {
-      return respond(413, {
-        error: "پیام بیش از حد طولانی است."
-      });
-    }
-
-    const chatResponse = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${groqKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-20b",
-          messages: [
-            {
-              role: "system",
-              content:
-                "تو mi.AI هستی؛ یک دستیار هوش مصنوعی مفید. " +
-                "به فارسی روان پاسخ بده، مگر اینکه کاربر زبان دیگری بخواهد. " +
-                "در برنامه‌نویسی پاسخ دقیق و کاربردی ارائه کن."
-            },
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          max_completion_tokens: 1200,
-          temperature: 0.7
-        })
+      if (!apiKey) {
+        return reply(500, {
+          error: "متغیر GROQ_API_KEY در تنظیمات Netlify تنظیم نشده است."
+        });
       }
-    );
 
-    const raw = await chatResponse.text();
-    let result = {};
+      const groqResponse = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + apiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-20b",
+            messages: [
+              {
+                role: "system",
+                content: "تو mi.AI هستی؛ یک دستیار هوش مصنوعی مفید. به فارسی روان و روشن پاسخ بده، مگر اینکه کاربر زبان دیگری بخواهد. در درخواست‌های برنامه‌نویسی، پاسخ دقیق و کد قابل استفاده ارائه کن."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 1800
+          })
+        }
+      );
 
-    try {
-      result = JSON.parse(raw);
-    } catch (_) {}
+      const raw = await groqResponse.text();
+      let data;
 
-    if (!chatResponse.ok) {
-      const detail =
-        result?.error?.message ||
-        result?.message ||
-        raw ||
-        "سرویس Groq درخواست را نپذیرفت.";
+      try {
+        data = JSON.parse(raw);
+      } catch (_) {
+        return reply(502, {
+          error: "پاسخ Groq قابل خواندن نیست.",
+          details: raw.slice(0, 800)
+        });
+      }
 
-      return respond(chatResponse.status, {
-        error: String(detail).slice(0, 1000),
+      if (!groqResponse.ok) {
+        return reply(groqResponse.status, {
+          error: data.error?.message || "خطا در دریافت پاسخ از Groq."
+        });
+      }
+
+      const answer = data.choices?.[0]?.message?.content;
+
+      if (typeof answer !== "string" || !answer.trim()) {
+        return reply(502, {
+          error: "پاسخ متنی معتبری از Groq دریافت نشد."
+        });
+      }
+
+      return reply(200, {
+        answer: answer.trim(),
         provider: "Groq"
       });
     }
 
-    const answer =
-      result?.choices?.[0]?.message?.content;
-
-    if (!answer) {
-      return respond(502, {
-        error: "پاسخ متنی از Groq دریافت نشد."
-      });
-    }
-
-    return respond(200, {
-      answer,
-      provider: "Groq"
+    return reply(400, {
+      error: "این عملیات هنوز پشتیبانی نمی‌شود: " + action
     });
 
   } catch (error) {
-    return respond(500, {
-      error: "خطا در اجرای mi.AI.",
-      details: String(error?.message || error)
+    return reply(500, {
+      error: "خطای داخلی سرور.",
+      details: error.message || "خطای ناشناخته"
     });
   }
 };
+        
