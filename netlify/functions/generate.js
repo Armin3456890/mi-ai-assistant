@@ -16,6 +16,25 @@ exports.handler = async (event) => {
     body: JSON.stringify(data)
   });
 
+  const readable = (value) => {
+    if (typeof value === "string") return value;
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  };
+
+  const readResponse = async (response) => {
+    const raw = await response.text();
+
+    try {
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return { raw_response: raw };
+    }
+  };
+
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };
   }
@@ -37,8 +56,9 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body || "{}");
     const action = body.action;
+
     const authHeaders = {
-      "Authorization": `Key ${apiKey}`,
+      Authorization: `Key ${apiKey}`,
       "Content-Type": "application/json"
     };
 
@@ -67,19 +87,20 @@ exports.handler = async (event) => {
         })
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await readResponse(response);
 
       if (!response.ok) {
         return reply(response.status, {
           error: "fal.ai درخواست ساخت ویدئو را نپذیرفت.",
-          details: data
+          http_status: response.status,
+          details: readable(data)
         });
       }
 
       if (!data.request_id) {
         return reply(502, {
           error: "شناسه درخواست از fal.ai دریافت نشد.",
-          details: data
+          details: readable(data)
         });
       }
 
@@ -105,29 +126,29 @@ exports.handler = async (event) => {
         { headers: authHeaders }
       );
 
-      const statusData = await statusResponse.json().catch(() => ({}));
+      const statusData = await readResponse(statusResponse);
 
       if (!statusResponse.ok) {
         return reply(statusResponse.status, {
           error: "بررسی وضعیت ویدئو ناموفق بود.",
-          details: statusData
+          http_status: statusResponse.status,
+          details: readable(statusData)
         });
       }
 
-      const status = statusData.status;
-
-      if (status === "COMPLETED") {
+      if (statusData.status === "COMPLETED") {
         const resultResponse = await fetch(
           `${BASE_URL}/${MODEL}/requests/${encodeURIComponent(requestId)}`,
           { headers: authHeaders }
         );
 
-        const resultData = await resultResponse.json().catch(() => ({}));
+        const resultData = await readResponse(resultResponse);
 
         if (!resultResponse.ok) {
           return reply(resultResponse.status, {
-            error: "دریافت ویدئوی ساخته‌شده ناموفق بود.",
-            details: resultData
+            error: "دریافت نتیجه ویدئو ناموفق بود.",
+            http_status: resultResponse.status,
+            details: readable(resultData)
           });
         }
 
@@ -136,7 +157,7 @@ exports.handler = async (event) => {
         if (!videoUrl) {
           return reply(502, {
             error: "لینک ویدئو در پاسخ fal.ai پیدا نشد.",
-            details: resultData
+            details: readable(resultData)
           });
         }
 
@@ -147,16 +168,16 @@ exports.handler = async (event) => {
         });
       }
 
-      if (status === "FAILED") {
+      if (statusData.status === "FAILED") {
         return reply(502, {
-          error: "ساخت ویدئو توسط fal.ai ناموفق بود.",
-          details: statusData
+          error: "fal.ai در ساخت ویدئو ناموفق بود.",
+          details: readable(statusData)
         });
       }
 
       return reply(200, {
         success: true,
-        status: status || "IN_PROGRESS",
+        status: statusData.status || "IN_PROGRESS",
         message: "ویدئو هنوز در حال ساخت است."
       });
     }
@@ -169,7 +190,7 @@ exports.handler = async (event) => {
   } catch (error) {
     return reply(500, {
       error: "خطای داخلی در تابع mi.AI رخ داد.",
-      details: error.message
+      details: error?.message || String(error)
     });
   }
 };
