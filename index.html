@@ -6,38 +6,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10111a">
 <title>mi.AI</title>
-
 <style>
 *{box-sizing:border-box}
-:root{
-  color-scheme:dark;
-  --bg:#10111a;
-  --panel:#191b28;
-  --panel2:#222437;
-  --text:#f4f5ff;
-  --muted:#a4a8c1;
-  --accent:#9275ff;
-  --border:#303248
-}
-body{
-  margin:0;background:var(--bg);color:var(--text);
-  font-family:system-ui,Tahoma,sans-serif;min-height:100dvh
-}
+:root{color-scheme:dark;--bg:#10111a;--panel:#191b28;--panel2:#222437;--text:#f4f5ff;--muted:#a4a8c1;--accent:#9275ff;--border:#303248}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Tahoma,sans-serif;min-height:100dvh}
 button,textarea,input,select{font:inherit}
 button{cursor:pointer;color:var(--text)}
 button:disabled{opacity:.55;cursor:wait}
 .app{width:100%;max-width:850px;margin:auto;min-height:100dvh;display:flex;flex-direction:column}
-header{
-  padding:17px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);position:sticky;top:0;
-  background:#10111aee;backdrop-filter:blur(12px);z-index:5
-}
+header{padding:17px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:#10111aee;backdrop-filter:blur(12px);z-index:5}
 .brand{display:flex;align-items:center;gap:11px}
-.logo{
-  width:43px;height:43px;border-radius:15px;display:grid;place-items:center;
-  font-size:21px;font-weight:800;background:linear-gradient(135deg,#9275ff,#5142bb);
-  box-shadow:0 5px 22px #745bff44
-}
+.logo{width:43px;height:43px;border-radius:15px;display:grid;place-items:center;font-size:21px;font-weight:800;background:linear-gradient(135deg,#9275ff,#5142bb);box-shadow:0 5px 22px #745bff44}
 h1{font-size:19px;margin:0}
 .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
 .status{color:#80e3b1;font-size:12px;white-space:nowrap}
@@ -53,7 +32,7 @@ main{flex:1;padding:17px;padding-bottom:25px}
 .suggestion{text-align:right;padding:13px;border-radius:14px;border:1px solid var(--border);background:var(--panel);font-size:13px;line-height:1.7}
 .suggestion span{display:block;font-size:19px;margin-bottom:5px}
 #messages{display:flex;flex-direction:column;gap:15px;padding-bottom:18px}
-.message{max-width:90%;padding:12px 14px;border-radius:16px;line-height:1.9;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.message{max-width:95%;padding:12px 14px;border-radius:16px;line-height:1.9;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
 .message.user{align-self:flex-start;background:#39305f;border-bottom-left-radius:5px}
 .message.ai{align-self:flex-end;background:var(--panel2);border:1px solid var(--border);border-bottom-right-radius:5px}
 .message.error{border-color:#a84959;color:#ffb7c0}
@@ -85,16 +64,12 @@ textarea:focus{border-color:#5142bb}
 @media(min-width:650px){main{padding:25px}.welcome{padding-top:55px}}
 </style>
 </head>
-
 <body>
 <div class="app">
 <header>
   <div class="brand">
     <div class="logo">mi</div>
-    <div>
-      <h1>mi.AI</h1>
-      <div class="subtitle">دستیار هوش مصنوعی تو</div>
-    </div>
+    <div><h1>mi.AI</h1><div class="subtitle">دستیار هوش مصنوعی تو</div></div>
   </div>
   <div class="status" id="status">● آماده</div>
 </header>
@@ -128,7 +103,7 @@ textarea:focus{border-color:#5142bb}
 <section id="image" class="tool-panel">
   <div class="card">
     <h2>🎨 ساخت تصویر</h2>
-    <p>توضیحات تصویر را وارد کن. اتصال تولید تصویر هنوز باید تنظیم شود.</p>
+    <p>توضیحات تصویر را وارد کن. تولید واقعی تصویر هنوز به اتصال مدل نیاز دارد.</p>
     <label class="field-label" for="imagePrompt">توضیحات تصویر</label>
     <textarea class="field" id="imagePrompt" rows="4" placeholder="A black dragon with red eyes, cinematic 3D style..."></textarea>
     <button class="primary" id="imageBtn">ساخت تصویر</button>
@@ -143,11 +118,7 @@ textarea:focus{border-color:#5142bb}
     <label class="field-label" for="videoPrompt">توضیحات ویدئو</label>
     <textarea class="field" id="videoPrompt" rows="4" placeholder="A cinematic camera approaches a futuristic city..."></textarea>
     <label class="field-label" for="videoDuration">مدت ویدئو</label>
-    <select class="field" id="videoDuration">
-      <option value="5">۵ ثانیه</option>
-      <option value="10">۱۰ ثانیه</option>
-      <option value="15">۱۵ ثانیه</option>
-    </select>
+    <select class="field" id="videoDuration"><option value="5">۵ ثانیه</option><option value="10">۱۰ ثانیه</option><option value="15">۱۵ ثانیه</option></select>
     <button class="primary" id="videoBtn">ساخت ویدئو</button>
     <div class="preview" id="videoPreview"></div>
   </div>
@@ -161,11 +132,7 @@ textarea:focus{border-color:#5142bb}
     <textarea class="field" id="musicPrompt" rows="4" placeholder="Epic cinematic music, dark atmosphere..."></textarea>
     <label class="field-label" for="musicStyle">سبک موسیقی</label>
     <select class="field" id="musicStyle">
-      <option value="cinematic">سینمایی</option>
-      <option value="electronic">الکترونیک</option>
-      <option value="ambient">آرام و محیطی</option>
-      <option value="game">موسیقی بازی</option>
-      <option value="pop">پاپ</option>
+      <option value="cinematic">سینمایی</option><option value="electronic">الکترونیک</option><option value="ambient">آرام و محیطی</option><option value="game">موسیقی بازی</option><option value="pop">پاپ</option>
     </select>
     <button class="primary" id="musicBtn">آماده‌سازی موسیقی</button>
     <div class="preview" id="musicPreview"></div>
@@ -178,12 +145,7 @@ textarea:focus{border-color:#5142bb}
     <p>زبان برنامه‌نویسی و درخواستت را وارد کن.</p>
     <label class="field-label" for="codeLanguage">زبان برنامه‌نویسی</label>
     <select class="field" id="codeLanguage">
-      <option>JavaScript</option>
-      <option>HTML / CSS</option>
-      <option>Python</option>
-      <option>GDScript (Godot)</option>
-      <option>Java</option>
-      <option>C#</option>
+      <option>JavaScript</option><option>HTML / CSS</option><option>Python</option><option>GDScript (Godot)</option><option>Java</option><option>C#</option>
     </select>
     <label class="field-label" for="codePrompt">درخواست کدنویسی</label>
     <textarea class="field" id="codePrompt" rows="5" placeholder="کدی بنویس که..."></textarea>
@@ -201,8 +163,7 @@ textarea:focus{border-color:#5142bb}
     <button class="primary" id="speakBtn">🔊 خواندن متن</button>
     <button class="secondary" id="stopSpeakBtn">توقف صدا</button>
     <button class="secondary" id="listenBtn">🎙️ شروع تشخیص گفتار</button>
-    <div class="preview" id="voicePreview"></div>
-    <div class="notice">پشتیبانی فارسی به مرورگر و صداهای نصب‌شده بستگی دارد.</div>
+    <div class="notice" id="voiceToolStatus">پشتیبانی فارسی به مرورگر و صداهای نصب‌شده بستگی دارد.</div>
   </div>
 </section>
 </main>
@@ -230,33 +191,23 @@ const input = $("messageInput");
 const sendBtn = $("sendBtn");
 const status = $("status");
 const voiceStatus = $("voiceStatus");
+const API_URL = "/.netlify/functions/generate";
 
 let busy = false;
 let recognition = null;
-
-// آدرس تابع بک‌اند Netlify
-const API_URL = "/.netlify/functions/generate";
 
 function setStatus(text) {
   status.textContent = text;
 }
 
 function switchTab(name) {
-  tabs.forEach(tab =>
-    tab.classList.toggle("active", tab.dataset.tab === name)
-  );
-
-  panels.forEach(panel =>
-    panel.classList.toggle("active", panel.id === name)
-  );
-
+  tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+  panels.forEach(panel => panel.classList.toggle("active", panel.id === name));
   $("composer").classList.toggle("hidden", name !== "chat");
   setStatus("● " + (name === "chat" ? "چت" : "بخش " + name));
 }
 
-tabs.forEach(tab =>
-  tab.addEventListener("click", () => switchTab(tab.dataset.tab))
-);
+tabs.forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
 
 document.querySelectorAll("[data-prompt]").forEach(button => {
   button.addEventListener("click", () => {
@@ -271,38 +222,27 @@ function speakPersian(text) {
     voiceStatus.textContent = "مرورگر از خواندن متن پشتیبانی نمی‌کند.";
     return;
   }
-
   if (!String(text || "").trim()) {
     voiceStatus.textContent = "متنی برای خواندن وجود ندارد.";
     return;
   }
 
   speechSynthesis.cancel();
-
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "fa-IR";
   utterance.rate = 0.9;
 
-  const voice = speechSynthesis.getVoices()
-    .find(v => /^fa([_-]|$)/i.test(v.lang));
-
+  const voice = speechSynthesis.getVoices().find(v => /^fa([_-]|$)/i.test(v.lang));
   if (voice) utterance.voice = voice;
 
-  utterance.onstart = () =>
-    voiceStatus.textContent = "در حال خواندن متن...";
-
-  utterance.onend = () =>
-    voiceStatus.textContent = "خواندن تمام شد.";
-
-  utterance.onerror = () =>
-    voiceStatus.textContent = "پخش صدا انجام نشد.";
-
+  utterance.onstart = () => voiceStatus.textContent = "در حال خواندن متن...";
+  utterance.onend = () => voiceStatus.textContent = "خواندن تمام شد.";
+  utterance.onerror = () => voiceStatus.textContent = "پخش صدا انجام نشد.";
   speechSynthesis.speak(utterance);
 }
 
 function addMessage(text, who, isError = false) {
   $("welcome").classList.add("hidden");
-
   const bubble = document.createElement("div");
   bubble.className = "message " + who + (isError ? " error" : "");
 
@@ -323,48 +263,68 @@ function addMessage(text, who, isError = false) {
     const stop = document.createElement("button");
     stop.textContent = "⏹ توقف صدا";
     stop.type = "button";
-    stop.addEventListener("click", () => speechSynthesis.cancel());
+    stop.addEventListener("click", () => {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+    });
 
     actions.append(speak, stop);
     bubble.appendChild(actions);
   }
 
   messages.appendChild(bubble);
-  bubble.scrollIntoView({ behavior: "smooth", block: "end" });
-  return { bubble, content };
+  bubble.scrollIntoView({behavior:"smooth",block:"end"});
+  return {bubble, content};
 }
 
 async function callChatAPI(message) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message,
-      action: "chat",
-      mode: "chat"
-    })
-  });
+  let response;
 
-  const data = await response.json().catch(() => ({}));
+  try {
+    response = await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        message: message,
+        prompt: message,
+        action: "chat",
+        mode: "chat"
+      })
+    });
+  } catch (error) {
+    throw new Error("ارتباط با سرور برقرار نشد. اینترنت یا آدرس تابع Netlify را بررسی کن.");
+  }
+
+  const raw = await response.text();
+  let data = {};
+
+  try {
+    data = JSON.parse(raw);
+  } catch (error) {
+    data = {};
+  }
 
   if (!response.ok) {
-    let details = data.error || "خطا در ارتباط با سرویس";
+    let detail = data.error || data.message || data.detail || raw || "سرور پاسخ مشخصی نداد.";
+    if (typeof detail !== "string") detail = JSON.stringify(detail);
 
     if (data.details) {
-      details += "\n" + JSON.stringify(data.details);
+      const extra = typeof data.details === "string" ? data.details : JSON.stringify(data.details);
+      detail += "\nجزئیات: " + extra;
     }
 
-    throw new Error(details);
+    throw new Error("خطای سرور (" + response.status + "): " + detail.slice(0, 1200));
   }
 
   const answer =
     data.answer ||
     data.response ||
+    data.output ||
+    data.text ||
     data.message ||
     (typeof data.result === "string" ? data.result : "");
 
   if (typeof answer !== "string" || !answer.trim()) {
-    throw new Error("پاسخ متنی از سرور دریافت نشد.");
+    throw new Error("سرور پاسخ متنی قابل استفاده نداد. پاسخ دریافتی: " + (raw.slice(0, 500) || "خالی"));
   }
 
   return answer.trim();
@@ -372,7 +332,6 @@ async function callChatAPI(message) {
 
 async function sendMessage() {
   const message = input.value.trim();
-
   if (busy) return;
 
   if (!message) {
@@ -394,8 +353,7 @@ async function sendMessage() {
     waiting.content.textContent = answer;
     setStatus("پاسخ دریافت شد");
   } catch (error) {
-    waiting.content.textContent =
-      "خطا: " + (error.message || "مشکلی پیش آمد.");
+    waiting.content.textContent = "خطا: " + (error.message || "مشکلی پیش آمد.");
     waiting.bubble.classList.add("error");
     waiting.bubble.querySelector(".message-actions")?.remove();
     setStatus("خطا در اتصال");
@@ -419,6 +377,7 @@ $("clearBtn").addEventListener("click", () => {
   messages.innerHTML = "";
   $("welcome").classList.remove("hidden");
   setStatus("گفت‌وگوی جدید آماده است");
+  input.focus();
 });
 
 function showPreview(id, text) {
@@ -429,106 +388,90 @@ function showPreview(id, text) {
 
 $("imageBtn").addEventListener("click", () => {
   const prompt = $("imagePrompt").value.trim();
-
-  showPreview(
-    "imagePreview",
-    prompt
-      ? "توضیحات تصویر ثبت شد.\nبرای تولید تصویر واقعی، اتصال مدل تصویر باید تنظیم شود."
-      : "اول توضیحات تصویر را بنویس."
-  );
+  showPreview("imagePreview", prompt
+    ? "توضیحات تصویر ثبت شد؛ تولید واقعی تصویر هنوز به اتصال مدل نیاز دارد."
+    : "اول توضیحات تصویر را بنویس.");
 });
 
 $("videoBtn").addEventListener("click", () => {
   const prompt = $("videoPrompt").value.trim();
-
-  showPreview(
-    "videoPreview",
-    prompt
-      ? "توضیحات ویدئو ثبت شد.\nتولید واقعی ویدئو هنوز به اتصال مدل ویدئو نیاز دارد."
-      : "اول توضیحات ویدئو را بنویس."
-  );
+  showPreview("videoPreview", prompt
+    ? "توضیحات ویدئو ثبت شد؛ تولید واقعی ویدئو هنوز به اتصال مدل نیاز دارد."
+    : "اول توضیحات ویدئو را بنویس.");
 });
 
 $("musicBtn").addEventListener("click", () => {
   const prompt = $("musicPrompt").value.trim();
-
-  showPreview(
-    "musicPreview",
-    prompt
-      ? "توضیحات موسیقی ثبت شد.\nتولید واقعی موسیقی هنوز به اتصال مدل موسیقی نیاز دارد."
-      : "اول توضیحات موسیقی را بنویس."
-  );
+  showPreview("musicPreview", prompt
+    ? "توضیحات موسیقی ثبت شد؛ تولید واقعی موسیقی هنوز به اتصال مدل نیاز دارد."
+    : "اول توضیحات موسیقی را بنویس.");
 });
 
 $("codeBtn").addEventListener("click", async () => {
   const prompt = $("codePrompt").value.trim();
-
   if (!prompt) {
     showPreview("codePreview", "اول درخواست کدنویسی را بنویس.");
     return;
   }
 
+  const button = $("codeBtn");
+  button.disabled = true;
+  button.textContent = "در حال دریافت پاسخ...";
+
   try {
     const answer = await callChatAPI(
-      "به عنوان دستیار کدنویسی، با زبان " +
-      $("codeLanguage").value +
+      "به عنوان دستیار کدنویسی، با زبان " + $("codeLanguage").value +
       " این درخواست را انجام بده:\n" + prompt
     );
-
     showPreview("codePreview", answer);
   } catch (error) {
     showPreview("codePreview", "خطا: " + error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "ارسال به دستیار کد";
   }
 });
 
-$("speakBtn").addEventListener("click", () => {
-  speakPersian($("voiceText").value);
-});
+$("speakBtn").addEventListener("click", () => speakPersian($("voiceText").value));
 
 $("stopSpeakBtn").addEventListener("click", () => {
   if ("speechSynthesis" in window) speechSynthesis.cancel();
-  voiceStatus.textContent = "خواندن متن متوقف شد.";
+  $("voiceToolStatus").textContent = "خواندن متن متوقف شد.";
 });
 
 $("listenBtn").addEventListener("click", () => {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    voiceStatus.textContent =
-      "تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود.";
+    $("voiceToolStatus").textContent = "تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود.";
     return;
   }
 
-  if (recognition) recognition.stop();
+  try {
+    if (recognition) recognition.stop();
+    recognition = new SpeechRecognition();
+    recognition.lang = "fa-IR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "fa-IR";
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onstart = () =>
-    voiceStatus.textContent = "گوش می‌دهم...";
-
-  recognition.onresult = event => {
-    const transcript = event.results[0][0].transcript;
-    $("voiceText").value = transcript;
-    input.value = transcript;
-    voiceStatus.textContent = "صدا به متن تبدیل شد.";
-  };
-
-  recognition.onerror = event =>
-    voiceStatus.textContent = "خطای تشخیص صدا: " + event.error;
-
-  recognition.onend = () => {
-    if (voiceStatus.textContent === "گوش می‌دهم...") {
-      voiceStatus.textContent = "ضبط صدا تمام شد.";
-    }
-  };
-
-  recognition.start();
+    recognition.onstart = () => $("voiceToolStatus").textContent = "گوش می‌دهم...";
+    recognition.onresult = event => {
+      const transcript = event.results[0][0].transcript;
+      $("voiceText").value = transcript;
+      input.value = transcript;
+      $("voiceToolStatus").textContent = "صدا به متن تبدیل شد.";
+    };
+    recognition.onerror = event => $("voiceToolStatus").textContent = "خطای تشخیص صدا: " + event.error;
+    recognition.onend = () => {
+      if ($("voiceToolStatus").textContent === "گوش می‌دهم...") {
+        $("voiceToolStatus").textContent = "ضبط صدا تمام شد.";
+      }
+    };
+    recognition.start();
+  } catch (error) {
+    $("voiceToolStatus").textContent = "شروع میکروفون ناموفق بود. مجوز میکروفون را بررسی کن.";
+  }
 });
 </script>
 </body>
-    </html>
-  
+</html>
