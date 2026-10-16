@@ -59,6 +59,7 @@ textarea:focus{border-color:#5142bb}
 .preview{display:none;margin-top:15px;border:1px solid var(--border);border-radius:14px;padding:12px;overflow-wrap:anywhere;line-height:1.9;font-size:13px;white-space:pre-wrap}
 .preview.visible{display:block}
 .preview img,.preview video{width:100%;border-radius:10px;margin-top:8px}
+.preview video{max-height:65vh;background:#000}
 .notice{color:var(--muted);font-size:12px;line-height:1.9;margin-top:12px}
 .hidden{display:none!important}
 @media(min-width:650px){main{padding:25px}.welcome{padding-top:55px}}
@@ -114,11 +115,15 @@ textarea:focus{border-color:#5142bb}
 <section id="video" class="tool-panel">
   <div class="card">
     <h2>🎬 ساخت ویدئو</h2>
-    <p>تولید واقعی ویدئو به اتصال سرویس نیاز دارد.</p>
+    <p>توضیحات را وارد کن تا درخواست به موتور تولید ویدئو ارسال شود.</p>
     <label class="field-label" for="videoPrompt">توضیحات ویدئو</label>
     <textarea class="field" id="videoPrompt" rows="4" placeholder="A cinematic camera approaches a futuristic city..."></textarea>
     <label class="field-label" for="videoDuration">مدت ویدئو</label>
-    <select class="field" id="videoDuration"><option value="5">۵ ثانیه</option><option value="10">۱۰ ثانیه</option><option value="15">۱۵ ثانیه</option></select>
+    <select class="field" id="videoDuration">
+      <option value="5">۵ ثانیه</option>
+      <option value="10">۱۰ ثانیه</option>
+      <option value="15">۱۵ ثانیه</option>
+    </select>
     <button class="primary" id="videoBtn">ساخت ویدئو</button>
     <div class="preview" id="videoPreview"></div>
   </div>
@@ -132,7 +137,11 @@ textarea:focus{border-color:#5142bb}
     <textarea class="field" id="musicPrompt" rows="4" placeholder="Epic cinematic music, dark atmosphere..."></textarea>
     <label class="field-label" for="musicStyle">سبک موسیقی</label>
     <select class="field" id="musicStyle">
-      <option value="cinematic">سینمایی</option><option value="electronic">الکترونیک</option><option value="ambient">آرام و محیطی</option><option value="game">موسیقی بازی</option><option value="pop">پاپ</option>
+      <option value="cinematic">سینمایی</option>
+      <option value="electronic">الکترونیک</option>
+      <option value="ambient">آرام و محیطی</option>
+      <option value="game">موسیقی بازی</option>
+      <option value="pop">پاپ</option>
     </select>
     <button class="primary" id="musicBtn">آماده‌سازی موسیقی</button>
     <div class="preview" id="musicPreview"></div>
@@ -195,6 +204,7 @@ const API_URL = "/.netlify/functions/generate";
 
 let busy = false;
 let recognition = null;
+let currentVideoUrl = null;
 
 function setStatus(text) {
   status.textContent = text;
@@ -284,13 +294,13 @@ async function callChatAPI(message) {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        message: message,
+        message,
         prompt: message,
         action: "chat",
         mode: "chat"
       })
     });
-  } catch (error) {
+  } catch (_) {
     throw new Error("ارتباط با سرور برقرار نشد. اینترنت یا آدرس تابع Netlify را بررسی کن.");
   }
 
@@ -299,9 +309,7 @@ async function callChatAPI(message) {
 
   try {
     data = JSON.parse(raw);
-  } catch (_) {
-    data = {};
-  }
+  } catch (_) {}
 
   if (!response.ok) {
     let detail = data.error || data.message || data.detail || raw || "سرور پاسخ مشخصی نداد.";
@@ -381,7 +389,7 @@ function showPreview(id, text) {
   output.classList.add("visible");
 }
 
-/* ساخت تصویر با نمایش جزئیات واقعی خطا */
+/* ساخت تصویر */
 $("imageBtn").addEventListener("click", async () => {
   const prompt = $("imagePrompt").value.trim();
   const button = $("imageBtn");
@@ -404,7 +412,7 @@ $("imageBtn").addEventListener("click", async () => {
       body: JSON.stringify({
         action: "image",
         mode: "image",
-        prompt: prompt,
+        prompt,
         message: prompt
       })
     });
@@ -416,29 +424,19 @@ $("imageBtn").addEventListener("click", async () => {
       data = JSON.parse(raw);
     } catch (_) {
       throw new Error(
-        "پاسخ سرور JSON نیست. وضعیت HTTP: " +
-        response.status +
-        "\nپاسخ واقعی سرور:\n" +
-        (raw.slice(0, 1000) || "(پاسخ خالی)")
+        "پاسخ سرور JSON نیست. وضعیت HTTP: " + response.status +
+        "\nپاسخ واقعی سرور:\n" + (raw.slice(0, 1000) || "(پاسخ خالی)")
       );
     }
 
     if (!response.ok) {
       let detail = data.error || data.message || data.detail || "سرور پاسخ مشخصی نداد.";
       if (typeof detail !== "string") detail = JSON.stringify(detail);
-
-      throw new Error(
-        "وضعیت HTTP: " + response.status +
-        "\n" + detail.slice(0, 1200)
-      );
+      throw new Error("وضعیت HTTP: " + response.status + "\n" + detail.slice(0, 1200));
     }
 
-    if (typeof data.image !== "string" ||
-        !data.image.startsWith("data:image/")) {
-      throw new Error(
-        "تصویر معتبر از سرور دریافت نشد.\nپاسخ سرور:\n" +
-        JSON.stringify(data).slice(0, 1000)
-      );
+    if (typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
+      throw new Error("تصویر معتبر از سرور دریافت نشد.\n" + JSON.stringify(data).slice(0, 1000));
     }
 
     output.replaceChildren();
@@ -464,13 +462,8 @@ $("imageBtn").addEventListener("click", async () => {
 
     output.classList.add("visible");
     setStatus("● تصویر دریافت شد");
-
   } catch (error) {
-    showPreview(
-      "imagePreview",
-      "خطا در ساخت تصویر:\n" +
-      (error.message || "خطای ناشناخته")
-    );
+    showPreview("imagePreview", "خطا در ساخت تصویر:\n" + (error.message || "خطای ناشناخته"));
     setStatus("● خطا در ساخت تصویر");
   } finally {
     button.disabled = false;
@@ -478,11 +471,90 @@ $("imageBtn").addEventListener("click", async () => {
   }
 });
 
-$("videoBtn").addEventListener("click", () => {
+/* ساخت ویدئو */
+$("videoBtn").addEventListener("click", async () => {
   const prompt = $("videoPrompt").value.trim();
-  showPreview("videoPreview", prompt
-    ? "توضیحات ویدئو ثبت شد؛ تولید واقعی ویدئو هنوز به اتصال مدل نیاز دارد."
-    : "اول توضیحات ویدئو را بنویس.");
+  const duration = Number($("videoDuration").value);
+  const button = $("videoBtn");
+  const output = $("videoPreview");
+
+  if (!prompt) {
+    showPreview("videoPreview", "اول توضیحات ویدئو را بنویس.");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "در حال تولید ویدئو...";
+  showPreview("videoPreview", "درخواست به سرویس ارسال شد. منتظر بمان...");
+  setStatus("● در حال تولید ویدئو");
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        action: "video",
+        mode: "video",
+        prompt,
+        message: prompt,
+        duration
+      })
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!response.ok || !contentType.startsWith("video/")) {
+      const raw = await response.text();
+      let detail = raw || "پاسخ خالی از سرور";
+
+      try {
+        const data = JSON.parse(raw);
+        detail = data.error || data.message || raw;
+      } catch (_) {}
+
+      throw new Error("وضعیت HTTP: " + response.status + "\n" + detail.slice(0, 1200));
+    }
+
+    const blob = await response.blob();
+
+    if (!blob.size) {
+      throw new Error("فایل ویدئوی دریافتی خالی است.");
+    }
+
+    if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
+    currentVideoUrl = URL.createObjectURL(blob);
+
+    output.replaceChildren();
+
+    const title = document.createElement("p");
+    title.textContent = "ویدئو آماده شد";
+    output.appendChild(title);
+
+    const video = document.createElement("video");
+    video.src = currentVideoUrl;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    output.appendChild(video);
+
+    const download = document.createElement("a");
+    download.href = currentVideoUrl;
+    download.download = "mi-ai-video.mp4";
+    download.textContent = "دانلود ویدئو";
+    download.style.display = "inline-block";
+    download.style.marginTop = "12px";
+    download.style.color = "#c9bcff";
+    output.appendChild(download);
+
+    output.classList.add("visible");
+    setStatus("● ویدئو دریافت شد");
+  } catch (error) {
+    showPreview("videoPreview", "خطا در ساخت ویدئو:\n" + (error.message || "خطای ناشناخته"));
+    setStatus("● خطا در ساخت ویدئو");
+  } finally {
+    button.disabled = false;
+    button.textContent = "ساخت ویدئو";
+  }
 });
 
 $("musicBtn").addEventListener("click", () => {
