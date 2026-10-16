@@ -8,388 +8,281 @@
 <title>mi.AI</title>
 <style>
 *{box-sizing:border-box}
-:root{color-scheme:dark;--bg:#10111a;--panel:#191b28;--panel2:#222437;--text:#f4f5ff;--muted:#a4a8c1;--accent:#9275ff;--border:#303248}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Tahoma,sans-serif;min-height:100dvh}
-button,textarea,input,select{font:inherit}
-button{cursor:pointer;color:var(--text)}
-button:disabled{opacity:.55;cursor:wait}
-.app{width:100%;max-width:850px;margin:auto;min-height:100dvh;display:flex;flex-direction:column}
-header{padding:17px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:#10111aee;backdrop-filter:blur(12px);z-index:5}
-.brand{display:flex;align-items:center;gap:11px}
-.logo{width:43px;height:43px;border-radius:15px;display:grid;place-items:center;font-size:21px;font-weight:800;background:linear-gradient(135deg,#9275ff,#5142bb);box-shadow:0 5px 22px #745bff44}
-h1{font-size:19px;margin:0}
-.subtitle{font-size:12px;color:var(--muted);margin-top:4px}
-.status{color:#80e3b1;font-size:12px;white-space:nowrap}
-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;border-bottom:1px solid var(--border)}
-.tab{background:var(--panel);border:1px solid var(--border);padding:12px 4px;border-radius:13px;font-size:13px}
-.tab.active{background:#342b5c;border-color:var(--accent);color:#dcd3ff}
-main{flex:1;padding:17px;padding-bottom:25px}
-.welcome{text-align:center;padding:35px 8px 24px}
-.welcome-icon{font-size:45px;margin-bottom:12px}
-.welcome h2{font-size:23px;margin:0 0 10px}
-.welcome p{color:var(--muted);line-height:1.9;font-size:14px;margin:0}
-.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:23px}
-.suggestion{text-align:right;padding:13px;border-radius:14px;border:1px solid var(--border);background:var(--panel);font-size:13px;line-height:1.7}
-.suggestion span{display:block;font-size:19px;margin-bottom:5px}
-#messages{display:flex;flex-direction:column;gap:15px;padding-bottom:18px}
-.message{max-width:95%;padding:12px 14px;border-radius:16px;line-height:1.9;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
-.message.user{align-self:flex-start;background:#39305f;border-bottom-left-radius:5px}
-.message.ai{align-self:flex-end;background:var(--panel2);border:1px solid var(--border);border-bottom-right-radius:5px}
-.message.error{border-color:#a84959;color:#ffb7c0}
-.message-content{white-space:pre-wrap;overflow-wrap:anywhere}
-.message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.message-actions button{background:transparent;border:1px solid var(--border);border-radius:11px;padding:8px 10px;font-size:12px}
-.composer{position:sticky;bottom:0;background:#10111af5;border-top:1px solid var(--border);padding:12px;padding-bottom:max(12px,env(safe-area-inset-bottom));z-index:4}
-.input-box{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:10px}
-textarea{display:block;width:100%;resize:vertical;min-height:48px;max-height:180px;color:var(--text);background:transparent;border:1px solid transparent;outline:none;padding:8px;line-height:1.8}
-textarea:focus{border-color:#5142bb}
-.composer-actions{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.mode-label{color:var(--muted);font-size:12px;flex:1}
-.send{border:0;border-radius:12px;padding:11px 18px;background:var(--accent);font-weight:700}
-.clear,.small-btn{background:transparent;border:1px solid var(--border);border-radius:11px;padding:9px;font-size:12px}
-.tool-panel{display:none}
-.tool-panel.active{display:block}
-.card{padding:18px;border-radius:18px;background:var(--panel);border:1px solid var(--border);margin-bottom:14px}
-.card h2{font-size:19px;margin:0 0 10px}
-.card p{font-size:13px;color:var(--muted);line-height:1.9}
-.field-label{display:block;margin:15px 0 8px;font-size:13px}
-.field{width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);outline:none}
-.primary{width:100%;margin-top:13px;border:none;border-radius:12px;background:var(--accent);padding:13px;font-weight:700}
-.secondary{width:100%;margin-top:9px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);padding:12px}
-.preview{display:none;margin-top:15px;border:1px solid var(--border);border-radius:14px;padding:12px;overflow-wrap:anywhere;line-height:1.9;font-size:13px;white-space:pre-wrap}
-.preview.visible{display:block}
-.preview img,.preview video{width:100%;border-radius:10px;margin-top:8px}
-.preview video{max-height:65vh;background:#000}
-.notice{color:var(--muted);font-size:12px;line-height:1.9;margin-top:12px}
-.hidden{display:none!important}
-@media(min-width:650px){main{padding:25px}.welcome{padding-top:55px}}
+:root{color-scheme:dark;--bg:#10111a;--panel:#191b28;--panel2:#222437;--accent:#9275ff;--border:#303248;--text:#f4f3ff;--muted:#a6a7bd;--danger:#ff747e}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;line-height:1.8}
+button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.6;cursor:wait}
+.app{width:min(100%,850px);margin:auto;padding:14px}
+header{display:flex;align-items:center;gap:12px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:20px}
+.logo{width:52px;height:52px;display:grid;place-items:center;background:var(--accent);color:#fff;border-radius:16px;font-size:25px;font-weight:bold;flex-shrink:0}
+h1{font-size:23px;margin:0}.subtitle{font-size:12px;color:var(--muted)}.status{margin-right:auto;color:#9de7b0;font-size:12px}
+nav{display:flex;gap:8px;overflow-x:auto;padding:12px 0;scrollbar-width:thin}
+nav button{white-space:nowrap;background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:12px;padding:10px 13px}
+nav button.active{background:var(--accent);border-color:var(--accent);color:white}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px}
+h2{font-size:18px;margin:0 0 8px}p{margin:6px 0 12px}.muted{color:var(--muted);font-size:13px}
+.tool-panel{display:none}.tool-panel.active{display:block}
+.messages{display:flex;flex-direction:column;gap:12px;min-height:170px;max-height:48vh;overflow-y:auto;padding:8px 0}
+.message{padding:12px 14px;border-radius:15px;max-width:94%;overflow-wrap:anywhere;white-space:pre-wrap}
+.message.bot{background:var(--panel2);align-self:flex-start}.message.user{background:#342b59;border:1px solid #51447f;align-self:flex-end}.message.error{border:1px solid var(--danger)}
+.composer{display:flex;gap:8px;margin-top:12px}.field{display:block;width:100%;padding:12px;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:12px;outline:none;resize:vertical}
+.field:focus{border-color:var(--accent)}.composer .field{min-width:0;flex:1;resize:none}
+.primary,.secondary{border:0;border-radius:12px;padding:11px 15px;color:white;background:var(--accent)}
+.secondary{background:var(--panel2);border:1px solid var(--border)}
+.field-label{display:block;margin:12px 0 6px;font-size:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.suggestions button{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:10px;font-size:12px}
+.preview{display:none;margin-top:14px;padding:12px;background:var(--panel2);border-radius:12px;overflow-wrap:anywhere;white-space:pre-wrap}
+.preview.visible{display:block}.preview img,.preview video{display:block;width:100%;height:auto;border-radius:12px;margin-top:10px}
+.preview a{color:#c7b8ff;overflow-wrap:anywhere}.small{font-size:12px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
+@media(max-width:480px){.app{padding:9px}header{padding:12px}.status{font-size:10px}.composer .primary{padding:9px 12px}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div class="brand">
-    <div class="logo">mi</div>
-    <div><h1>mi.AI</h1><div class="subtitle">دستیار هوش مصنوعی تو</div></div>
-  </div>
+  <div class="logo">mi</div>
+  <div><h1>mi.AI</h1><div class="subtitle">دستیار هوش مصنوعی تو</div></div>
   <div class="status" id="status">● آماده</div>
 </header>
 
-<nav>
-  <button class="tab active" data-tab="chat">چت هوشمند</button>
-  <button class="tab" data-tab="image">ساخت عکس</button>
-  <button class="tab" data-tab="video">ساخت ویدئو</button>
-  <button class="tab" data-tab="music">ساخت موسیقی</button>
-  <button class="tab" data-tab="code">کدنویسی</button>
-  <button class="tab" data-tab="voice">دستیار صدا</button>
+<nav id="tabs">
+  <button class="active" data-tab="chat">چت هوشمند</button>
+  <button data-tab="image">ساخت عکس</button>
+  <button data-tab="video">ساخت ویدئو</button>
+  <button data-tab="music">ساخت موسیقی</button>
+  <button data-tab="code">کدنویسی</button>
+  <button data-tab="voice">دستیار صدا</button>
 </nav>
 
 <main>
 <section id="chat" class="tool-panel active">
-  <div class="welcome" id="welcome">
-    <div class="welcome-icon">✦</div>
-    <h2>سلام! من mi.AI هستم</h2>
-    <p>چه کاری برات انجام بدم؟<br>سؤال بپرس، ایده بگیر یا یک پروژه جدید شروع کن.</p>
-    <div class="suggestions">
-      <button class="suggestion" data-prompt="یک داستان علمی تخیلی کوتاه بنویس"><span>✍️</span>نوشتن داستان</button>
-      <button class="suggestion" data-prompt="چند ایده خلاقانه برای ساخت بازی موبایل بده"><span>🎮</span>ایده بازی</button>
-      <button class="suggestion" data-prompt="هوش مصنوعی را ساده توضیح بده"><span>🧠</span>یادگیری</button>
-      <button class="suggestion" data-prompt="یک ایده سینمایی برای ساخت تصویر پیشنهاد بده"><span>🎨</span>ایده تصویر</button>
-    </div>
-  </div>
-  <div id="messages"></div>
-  <div id="voiceStatus" class="notice" aria-live="polite"></div>
+<div class="card">
+<h2>چت هوشمند mi.AI</h2>
+<p class="muted">سؤالت را بنویس؛ پاسخ به زبان فارسی ارائه می‌شود.</p>
+<div class="suggestions">
+<button data-prompt="یک داستان علمی‌تخیلی کوتاه بنویس.">داستان</button>
+<button data-prompt="چند ایده برای ساخت یک بازی موبایلی بده.">ایده بازی</button>
+<button data-prompt="هوش مصنوعی را ساده توضیح بده.">یادگیری هوش مصنوعی</button>
+<button data-prompt="یک ایده سینمایی برای تصویر اژدهای سیاه با چشم‌های قرمز بده.">ایده تصویر</button>
+</div>
+<div id="messages" class="messages" aria-live="polite"><div class="message bot">سلام! من mi.AI هستم. چه کاری برات انجام بدم؟</div></div>
+<div class="composer">
+<textarea id="chatInput" class="field" rows="2" placeholder="پیامت را بنویس..."></textarea>
+<button id="sendBtn" class="primary">ارسال</button>
+</div>
+<div class="actions">
+<button id="clearBtn" class="secondary">پاک‌کردن گفتگو</button>
+<button id="speakBtn" class="secondary">🔊 شنیدن پاسخ</button>
+<button id="stopSpeakBtn" class="secondary">توقف صدا</button>
+</div>
+</div>
 </section>
 
 <section id="image" class="tool-panel">
-  <div class="card">
-    <h2>🎨 ساخت تصویر</h2>
-    <p>توضیحات تصویر را وارد کن تا موتور ساخت تصویر آن را پردازش کند.</p>
-    <label class="field-label" for="imagePrompt">توضیحات تصویر</label>
-    <textarea class="field" id="imagePrompt" rows="4" placeholder="یک اژدهای سیاه با چشم‌های قرمز، سبک سه‌بعدی سینمایی..."></textarea>
-    <button class="primary" id="imageBtn">ساخت تصویر</button>
-    <div class="preview" id="imagePreview"></div>
-  </div>
+<div class="card">
+<h2>ساخت تصویر</h2><p class="muted">توضیحات تصویر را بنویس.</p>
+<label class="field-label" for="imagePrompt">توضیحات تصویر</label>
+<textarea class="field" id="imagePrompt" rows="4" placeholder="A black dragon with red eyes, cinematic 3D style..."></textarea>
+<div class="actions"><button class="primary" id="imageBtn">ساخت تصویر</button></div>
+<div class="preview" id="imagePreview"></div>
+</div>
 </section>
 
 <section id="video" class="tool-panel">
-  <div class="card">
-    <h2>🎬 ساخت ویدئو</h2>
-    <p>توضیحات را وارد کن تا درخواست به موتور تولید ویدئو ارسال شود.</p>
-    <label class="field-label" for="videoPrompt">توضیحات ویدئو</label>
-    <textarea class="field" id="videoPrompt" rows="4" placeholder="A cinematic camera approaches a futuristic city..."></textarea>
-    <label class="field-label" for="videoDuration">مدت ویدئو</label>
-    <select class="field" id="videoDuration">
-      <option value="5">۵ ثانیه</option>
-      <option value="10">۱۰ ثانیه</option>
-      <option value="15">۱۵ ثانیه</option>
-    </select>
-    <button class="primary" id="videoBtn">ساخت ویدئو</button>
-    <div class="preview" id="videoPreview"></div>
-  </div>
+<div class="card">
+<h2>ساخت ویدئو</h2>
+<p class="muted">توضیح ویدئو را به فارسی یا انگلیسی بنویس.</p>
+<label class="field-label" for="videoPrompt">توضیحات ویدئو</label>
+<textarea class="field" id="videoPrompt" rows="4" placeholder="مثلاً یک ماشین اسپرت قرمز در شهری آینده‌نگرانه حرکت می‌کند..."></textarea>
+<button class="primary" id="videoBtn" style="margin-top:10px">ساخت ویدئو</button>
+<div class="preview" id="videoPreview"></div>
+<p class="small">تولید ویدئو ممکن است چند دقیقه طول بکشد و به سرویس مدل ویدئوساز نیاز دارد.</p>
+</div>
 </section>
 
 <section id="music" class="tool-panel">
-  <div class="card">
-    <h2>🎵 ساخت موسیقی</h2>
-    <p>تولید واقعی موسیقی به اتصال سرویس نیاز دارد.</p>
-    <label class="field-label" for="musicPrompt">توضیحات موسیقی</label>
-    <textarea class="field" id="musicPrompt" rows="4" placeholder="Epic cinematic music, dark atmosphere..."></textarea>
-    <label class="field-label" for="musicStyle">سبک موسیقی</label>
-    <select class="field" id="musicStyle">
-      <option value="cinematic">سینمایی</option>
-      <option value="electronic">الکترونیک</option>
-      <option value="ambient">آرام و محیطی</option>
-      <option value="game">موسیقی بازی</option>
-      <option value="pop">پاپ</option>
-    </select>
-    <button class="primary" id="musicBtn">آماده‌سازی موسیقی</button>
-    <div class="preview" id="musicPreview"></div>
-  </div>
+<div class="card">
+<h2>ساخت موسیقی</h2><p>سبک و حال‌وهوای موسیقی را توضیح بده.</p>
+<textarea class="field" id="musicPrompt" rows="4" placeholder="مثلاً موسیقی سینمایی حماسی با پیانو..."></textarea>
+<button class="primary" id="musicBtn" style="margin-top:10px">آماده‌سازی درخواست</button>
+<div class="preview" id="musicPreview"></div>
+<p class="small">تولید فایل موسیقی نیازمند اتصال مدل موسیقی است.</p>
+</div>
 </section>
 
 <section id="code" class="tool-panel">
-  <div class="card">
-    <h2>💻 دستیار کدنویسی</h2>
-    <p>زبان برنامه‌نویسی و درخواستت را وارد کن.</p>
-    <label class="field-label" for="codeLanguage">زبان برنامه‌نویسی</label>
-    <select class="field" id="codeLanguage">
-      <option>JavaScript</option><option>HTML / CSS</option><option>Python</option><option>GDScript (Godot)</option><option>Java</option><option>C#</option>
-    </select>
-    <label class="field-label" for="codePrompt">درخواست کدنویسی</label>
-    <textarea class="field" id="codePrompt" rows="5" placeholder="کدی بنویس که..."></textarea>
-    <button class="primary" id="codeBtn">ارسال به دستیار کد</button>
-    <div class="preview" id="codePreview"></div>
-  </div>
+<div class="card">
+<h2>دستیار کدنویسی</h2><p class="muted">کد یا سؤال برنامه‌نویسی‌ات را بنویس.</p>
+<textarea class="field" id="codePrompt" rows="5" placeholder="مثلاً یک بازی ساده با JavaScript بساز..."></textarea>
+<button class="primary" id="codeBtn" style="margin-top:10px">کمک در کدنویسی</button>
+<div class="preview" id="codePreview"></div>
+</div>
 </section>
 
 <section id="voice" class="tool-panel">
-  <div class="card">
-    <h2>🎙️ دستیار صدا</h2>
-    <p>متن را با صدای دستگاه بخوان یا در مرورگر سازگار از میکروفون استفاده کن.</p>
-    <label class="field-label" for="voiceText">متن برای خواندن</label>
-    <textarea class="field" id="voiceText" rows="4" placeholder="متنی که می‌خواهی خوانده شود..."></textarea>
-    <button class="primary" id="speakBtn">🔊 خواندن متن</button>
-    <button class="secondary" id="stopSpeakBtn">توقف صدا</button>
-    <button class="secondary" id="listenBtn">🎙️ شروع تشخیص گفتار</button>
-    <div class="notice" id="voiceToolStatus">پشتیبانی فارسی به مرورگر و صداهای نصب‌شده بستگی دارد.</div>
-  </div>
+<div class="card">
+<h2>دستیار صدا</h2><p class="muted">با میکروفون صحبت کن؛ متن شناسایی‌شده به چت منتقل می‌شود.</p>
+<button class="primary" id="micBtn">🎙 شروع صحبت</button>
+<button class="secondary" id="micStopBtn">توقف میکروفون</button>
+<label class="field-label" for="voiceText">متن شناسایی‌شده</label>
+<textarea class="field" id="voiceText" rows="3" placeholder="متن گفتارت اینجا نمایش داده می‌شود..."></textarea>
+<button class="primary" id="voiceSendBtn" style="margin-top:10px">ارسال متن به چت</button>
+<div class="preview" id="voicePreview"></div>
+</div>
 </section>
 </main>
-
-<section class="composer" id="composer">
-  <div class="input-box">
-    <textarea id="messageInput" placeholder="پیامت رو برای mi.AI بنویس..." rows="1"></textarea>
-    <div class="composer-actions">
-      <span class="mode-label">گفت‌وگوی فارسی</span>
-      <button class="clear" id="clearBtn">گفت‌وگوی جدید</button>
-      <button class="send" id="sendBtn">ارسال ↑</button>
-    </div>
-  </div>
-</section>
+<footer>mi.AI · دستیار هوش مصنوعی</footer>
 </div>
 
 <script>
 "use strict";
 
-const $ = id => document.getElementById(id);
-const tabs = document.querySelectorAll("[data-tab]");
-const panels = document.querySelectorAll(".tool-panel");
-const messages = $("messages");
-const input = $("messageInput");
-const sendBtn = $("sendBtn");
-const status = $("status");
-const voiceStatus = $("voiceStatus");
 const API_URL = "/.netlify/functions/generate";
-
-let busy = false;
+const $ = id => document.getElementById(id);
+let lastAnswer = "";
 let recognition = null;
-let currentVideoUrl = null;
 
 function setStatus(text) {
-  status.textContent = text;
+  $("status").textContent = "● " + text;
 }
 
-function switchTab(name) {
-  tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
-  panels.forEach(panel => panel.classList.toggle("active", panel.id === name));
-  $("composer").classList.toggle("hidden", name !== "chat");
-  setStatus("● " + (name === "chat" ? "چت" : "بخش " + name));
+function showPreview(id, text) {
+  const el = $(id);
+  el.replaceChildren();
+  el.textContent = text;
+  el.classList.add("visible");
 }
 
-tabs.forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
+function addMessage(text, who = "bot", isError = false) {
+  const el = document.createElement("div");
+  el.className = "message " + who + (isError ? " error" : "");
+  el.textContent = text;
+  $("messages").appendChild(el);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return el;
+}
 
-document.querySelectorAll("[data-prompt]").forEach(button => {
-  button.addEventListener("click", () => {
-    input.value = button.dataset.prompt;
-    switchTab("chat");
-    input.focus();
+function switchTab(tab) {
+  document.querySelectorAll(".tool-panel").forEach(panel =>
+    panel.classList.toggle("active", panel.id === tab)
+  );
+  document.querySelectorAll("#tabs button").forEach(button =>
+    button.classList.toggle("active", button.dataset.tab === tab)
+  );
+}
+
+document.querySelectorAll("#tabs button").forEach(button =>
+  button.addEventListener("click", () => switchTab(button.dataset.tab))
+);
+
+async function requestAPI(payload) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
   });
-});
-
-function speakPersian(text) {
-  if (!("speechSynthesis" in window)) {
-    voiceStatus.textContent = "مرورگر از خواندن متن پشتیبانی نمی‌کند.";
-    return;
-  }
-  if (!String(text || "").trim()) {
-    voiceStatus.textContent = "متنی برای خواندن وجود ندارد.";
-    return;
-  }
-
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "fa-IR";
-  utterance.rate = 0.9;
-
-  const voice = speechSynthesis.getVoices().find(v => /^fa([_-]|$)/i.test(v.lang));
-  if (voice) utterance.voice = voice;
-
-  utterance.onstart = () => voiceStatus.textContent = "در حال خواندن متن...";
-  utterance.onend = () => voiceStatus.textContent = "خواندن تمام شد.";
-  utterance.onerror = () => voiceStatus.textContent = "پخش صدا انجام نشد.";
-  speechSynthesis.speak(utterance);
-}
-
-function addMessage(text, who, isError = false) {
-  $("welcome").classList.add("hidden");
-  const bubble = document.createElement("div");
-  bubble.className = "message " + who + (isError ? " error" : "");
-
-  const content = document.createElement("div");
-  content.className = "message-content";
-  content.textContent = text;
-  bubble.appendChild(content);
-
-  if (who === "ai" && !isError) {
-    const actions = document.createElement("div");
-    actions.className = "message-actions";
-
-    const speak = document.createElement("button");
-    speak.textContent = "🔊 شنیدن پاسخ";
-    speak.type = "button";
-    speak.addEventListener("click", () => speakPersian(content.textContent));
-
-    const stop = document.createElement("button");
-    stop.textContent = "⏹ توقف صدا";
-    stop.type = "button";
-    stop.addEventListener("click", () => {
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    });
-
-    actions.append(speak, stop);
-    bubble.appendChild(actions);
-  }
-
-  messages.appendChild(bubble);
-  bubble.scrollIntoView({behavior:"smooth",block:"end"});
-  return {bubble, content};
-}
-
-async function callChatAPI(message) {
-  let response;
-
-  try {
-    response = await fetch(API_URL, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        message,
-        prompt: message,
-        action: "chat",
-        mode: "chat"
-      })
-    });
-  } catch (_) {
-    throw new Error("ارتباط با سرور برقرار نشد. اینترنت یا آدرس تابع Netlify را بررسی کن.");
-  }
 
   const raw = await response.text();
-  let data = {};
+  let data;
 
   try {
     data = JSON.parse(raw);
-  } catch (_) {}
+  } catch {
+    throw new Error("پاسخ سرور قابل خواندن نیست. وضعیت HTTP: " + response.status);
+  }
 
   if (!response.ok) {
-    let detail = data.error || data.message || data.detail || raw || "سرور پاسخ مشخصی نداد.";
-    if (typeof detail !== "string") detail = JSON.stringify(detail);
-    throw new Error("خطای سرور (" + response.status + "): " + detail.slice(0, 1200));
+    let message = data.error || data.message || "خطای سرور: " + response.status;
+    if (data.details) message += "\nجزئیات: " + data.details;
+    if (data.upstreamStatus) message += "\nوضعیت fal.ai: " + data.upstreamStatus;
+    throw new Error(message);
   }
 
-  const answer =
-    data.answer ||
-    data.response ||
-    data.output ||
-    data.text ||
-    data.message ||
-    (typeof data.result === "string" ? data.result : "");
-
-  if (typeof answer !== "string" || !answer.trim()) {
-    throw new Error("سرور پاسخ متنی قابل استفاده نداد. پاسخ دریافتی: " + (raw.slice(0, 500) || "خالی"));
-  }
-
-  return answer.trim();
+  return data;
 }
 
-async function sendMessage() {
-  const message = input.value.trim();
-  if (busy) return;
+async function sendChat(text) {
+  const prompt = text.trim();
+  if (!prompt) return;
 
-  if (!message) {
-    setStatus("پیام خالی است");
-    input.focus();
-    return;
-  }
-
-  addMessage(message, "user");
-  input.value = "";
-  busy = true;
-  sendBtn.disabled = true;
-  setStatus("در حال دریافت پاسخ...");
-
-  const waiting = addMessage("در حال آماده‌سازی پاسخ...", "ai");
+  addMessage(prompt, "user");
+  $("chatInput").value = "";
+  $("sendBtn").disabled = true;
+  setStatus("در حال پاسخ‌گویی...");
+  const waiting = addMessage("در حال فکر کردن...");
 
   try {
-    const answer = await callChatAPI(message);
-    waiting.content.textContent = answer;
-    setStatus("پاسخ دریافت شد");
+    const data = await requestAPI({
+      action: "chat",
+      mode: "chat",
+      message: prompt,
+      prompt
+    });
+
+    const answer = data.answer || data.message || data.response;
+    if (typeof answer !== "string" || !answer.trim()) {
+      throw new Error("پاسخ متنی از سرور دریافت نشد.");
+    }
+
+    lastAnswer = answer.trim();
+    waiting.textContent = lastAnswer;
+    setStatus("آماده");
   } catch (error) {
-    waiting.content.textContent = "خطا: " + (error.message || "مشکلی پیش آمد.");
-    waiting.bubble.classList.add("error");
-    waiting.bubble.querySelector(".message-actions")?.remove();
-    setStatus("خطا در اتصال");
+    waiting.textContent = "خطا: " + error.message;
+    waiting.classList.add("error");
+    setStatus("خطا");
   } finally {
-    busy = false;
-    sendBtn.disabled = false;
-    input.focus();
+    $("sendBtn").disabled = false;
   }
 }
 
-sendBtn.addEventListener("click", sendMessage);
-
-input.addEventListener("keydown", event => {
+$("sendBtn").addEventListener("click", () => sendChat($("chatInput").value));
+$("chatInput").addEventListener("keydown", event => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
-    sendMessage();
+    sendChat($("chatInput").value);
   }
 });
 
 $("clearBtn").addEventListener("click", () => {
-  messages.innerHTML = "";
-  $("welcome").classList.remove("hidden");
-  setStatus("گفت‌وگوی جدید آماده است");
-  input.focus();
+  $("messages").replaceChildren();
+  lastAnswer = "";
+  addMessage("گفتگو پاک شد. چه چیزی می‌خواهی بپرسی؟");
 });
 
-function showPreview(id, text) {
-  const output = $(id);
-  output.replaceChildren();
-  output.textContent = text;
-  output.classList.add("visible");
-}
+document.querySelectorAll("[data-prompt]").forEach(button =>
+  button.addEventListener("click", () => {
+    const prompt = button.dataset.prompt;
+    switchTab("chat");
+    sendChat(prompt);
+  })
+);
 
-/* ساخت تصویر */
+$("speakBtn").addEventListener("click", () => {
+  if (!lastAnswer) {
+    setStatus("پاسخی برای خواندن نیست");
+    return;
+  }
+  if (!("speechSynthesis" in window)) {
+    setStatus("خواندن صدا پشتیبانی نمی‌شود");
+    return;
+  }
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(lastAnswer);
+  utterance.lang = "fa-IR";
+  utterance.rate = 0.9;
+  utterance.onend = () => setStatus("آماده");
+  utterance.onerror = () => setStatus("خطا در پخش صدا");
+  speechSynthesis.speak(utterance);
+});
+
+$("stopSpeakBtn").addEventListener("click", () => {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  setStatus("صدا متوقف شد");
+});
+
 $("imageBtn").addEventListener("click", async () => {
   const prompt = $("imagePrompt").value.trim();
   const button = $("imageBtn");
@@ -402,79 +295,46 @@ $("imageBtn").addEventListener("click", async () => {
 
   button.disabled = true;
   button.textContent = "در حال ساخت تصویر...";
-  showPreview("imagePreview", "درخواست ساخت تصویر ارسال شد. لطفاً منتظر بمان...");
-  setStatus("● در حال ساخت تصویر");
+  showPreview("imagePreview", "درخواست ارسال شد؛ منتظر پاسخ سرور بمان.");
+  setStatus("در حال ساخت تصویر...");
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        action: "image",
-        mode: "image",
-        prompt,
-        message: prompt
-      })
-    });
+    const data = await requestAPI({action: "image", mode: "image", prompt});
 
-    const raw = await response.text();
-    let data;
-
-    try {
-      data = JSON.parse(raw);
-    } catch (_) {
-      throw new Error(
-        "پاسخ سرور JSON نیست. وضعیت HTTP: " + response.status +
-        "\nپاسخ واقعی سرور:\n" + (raw.slice(0, 1000) || "(پاسخ خالی)")
-      );
-    }
-
-    if (!response.ok) {
-      let detail = data.error || data.message || data.detail || "سرور پاسخ مشخصی نداد.";
-      if (typeof detail !== "string") detail = JSON.stringify(detail);
-      throw new Error("وضعیت HTTP: " + response.status + "\n" + detail.slice(0, 1200));
-    }
-
-    if (typeof data.image !== "string" || !data.image.startsWith("data:image/")) {
-      throw new Error("تصویر معتبر از سرور دریافت نشد.\n" + JSON.stringify(data).slice(0, 1000));
+    if (typeof data.image !== "string" ||
+        !data.image.startsWith("data:image/")) {
+      throw new Error(data.error || "تصویر معتبر از سرور دریافت نشد.");
     }
 
     output.replaceChildren();
-
-    const title = document.createElement("p");
-    title.textContent = "تصویر ساخته شد";
-    output.appendChild(title);
+    const caption = document.createElement("p");
+    caption.textContent = "تصویر ساخته شد";
+    output.appendChild(caption);
 
     const img = document.createElement("img");
     img.src = data.image;
     img.alt = prompt;
-    img.loading = "lazy";
     output.appendChild(img);
 
-    const download = document.createElement("a");
-    download.href = data.image;
-    download.download = "mi-ai-image.png";
-    download.textContent = "دانلود تصویر";
-    download.style.display = "inline-block";
-    download.style.marginTop = "12px";
-    download.style.color = "#c9bcff";
-    output.appendChild(download);
-
+    const link = document.createElement("a");
+    link.href = data.image;
+    link.download = "mi-ai-image.png";
+    link.textContent = "دانلود تصویر";
+    output.appendChild(link);
     output.classList.add("visible");
-    setStatus("● تصویر دریافت شد");
+    setStatus("تصویر دریافت شد");
   } catch (error) {
-    showPreview("imagePreview", "خطا در ساخت تصویر:\n" + (error.message || "خطای ناشناخته"));
-    setStatus("● خطا در ساخت تصویر");
+    showPreview("imagePreview", "خطا در ساخت تصویر: " + error.message);
+    setStatus("خطا در ساخت تصویر");
   } finally {
     button.disabled = false;
     button.textContent = "ساخت تصویر";
   }
 });
 
-/* ساخت ویدئو */
+// Real video generation via the Netlify function.
 $("videoBtn").addEventListener("click", async () => {
   const prompt = $("videoPrompt").value.trim();
-  const duration = Number($("videoDuration").value);
   const button = $("videoBtn");
   const output = $("videoPreview");
 
@@ -484,73 +344,75 @@ $("videoBtn").addEventListener("click", async () => {
   }
 
   button.disabled = true;
-  button.textContent = "در حال تولید ویدئو...";
-  showPreview("videoPreview", "درخواست به سرویس ارسال شد. منتظر بمان...");
-  setStatus("● در حال تولید ویدئو");
+  button.textContent = "در حال ارسال...";
+  setStatus("در حال ارسال درخواست ویدئو...");
+  showPreview("videoPreview", "در حال ارسال درخواست به موتور تولید ویدئو...");
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        action: "video",
-        mode: "video",
-        prompt,
-        message: prompt,
-        duration
-      })
-    });
+    const data = await requestAPI({action: "video", prompt});
+    const requestId = data.request_id;
 
-    const contentType = response.headers.get("content-type") || "";
-
-    if (!response.ok || !contentType.startsWith("video/")) {
-      const raw = await response.text();
-      let detail = raw || "پاسخ خالی از سرور";
-
-      try {
-        const data = JSON.parse(raw);
-        detail = data.error || data.message || raw;
-      } catch (_) {}
-
-      throw new Error("وضعیت HTTP: " + response.status + "\n" + detail.slice(0, 1200));
+    if (!requestId) {
+      throw new Error(data.error || "شناسه درخواست دریافت نشد.");
     }
 
-    const blob = await response.blob();
+    showPreview("videoPreview", "درخواست ثبت شد. شناسه: " + requestId +
+      "\nدر حال تولید ویدئو؛ لطفاً صفحه را باز نگه دار.");
+    button.textContent = "در حال تولید...";
+    setStatus("در حال تولید ویدئو...");
 
-    if (!blob.size) {
-      throw new Error("فایل ویدئوی دریافتی خالی است.");
+    // Check status for up to six minutes.
+    for (let i = 0; i < 90; i++) {
+      await new Promise(resolve => setTimeout(resolve, 4000));
+
+      const status = await requestAPI({
+        action: "video_status",
+        request_id: requestId
+      });
+
+      if (status.status === "FAILED") {
+        throw new Error(status.error || "تولید ویدئو ناموفق بود.");
+      }
+
+      if (status.status === "COMPLETED" && status.video?.url) {
+        output.replaceChildren();
+
+        const title = document.createElement("p");
+        title.textContent = "ویدئو آماده شد!";
+        output.appendChild(title);
+
+        const player = document.createElement("video");
+        player.controls = true;
+        player.playsInline = true;
+        player.preload = "metadata";
+        player.src = status.video.url;
+        output.appendChild(player);
+
+        const link = document.createElement("a");
+        link.href = status.video.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "باز کردن ویدئو در صفحه جدید";
+        link.style.display = "inline-block";
+        link.style.marginTop = "12px";
+        output.appendChild(link);
+
+        output.classList.add("visible");
+        setStatus("ویدئو آماده شد");
+        return;
+      }
+
+      showPreview("videoPreview",
+        "درخواست ثبت شده است.\nوضعیت: " +
+        (status.status || "در حال پردازش") +
+        "\nلطفاً منتظر بمان...");
     }
 
-    if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
-    currentVideoUrl = URL.createObjectURL(blob);
+    throw new Error("پس از شش دقیقه ویدئو آماده نشد. شناسه درخواست: " + requestId);
 
-    output.replaceChildren();
-
-    const title = document.createElement("p");
-    title.textContent = "ویدئو آماده شد";
-    output.appendChild(title);
-
-    const video = document.createElement("video");
-    video.src = currentVideoUrl;
-    video.controls = true;
-    video.playsInline = true;
-    video.preload = "metadata";
-    output.appendChild(video);
-
-    const download = document.createElement("a");
-    download.href = currentVideoUrl;
-    download.download = "mi-ai-video.mp4";
-    download.textContent = "دانلود ویدئو";
-    download.style.display = "inline-block";
-    download.style.marginTop = "12px";
-    download.style.color = "#c9bcff";
-    output.appendChild(download);
-
-    output.classList.add("visible");
-    setStatus("● ویدئو دریافت شد");
   } catch (error) {
-    showPreview("videoPreview", "خطا در ساخت ویدئو:\n" + (error.message || "خطای ناشناخته"));
-    setStatus("● خطا در ساخت ویدئو");
+    showPreview("videoPreview", "خطا در ساخت ویدئو:\n" + error.message);
+    setStatus("خطا در ساخت ویدئو");
   } finally {
     button.disabled = false;
     button.textContent = "ساخت ویدئو";
@@ -560,74 +422,110 @@ $("videoBtn").addEventListener("click", async () => {
 $("musicBtn").addEventListener("click", () => {
   const prompt = $("musicPrompt").value.trim();
   showPreview("musicPreview", prompt
-    ? "توضیحات موسیقی ثبت شد؛ تولید واقعی موسیقی هنوز به اتصال مدل نیاز دارد."
-    : "اول توضیحات موسیقی را بنویس.");
+    ? "ایده موسیقی ثبت شد؛ تولید واقعی به اتصال مدل موسیقی نیاز دارد."
+    : "اول سبک موسیقی را بنویس.");
 });
 
 $("codeBtn").addEventListener("click", async () => {
   const prompt = $("codePrompt").value.trim();
   if (!prompt) {
-    showPreview("codePreview", "اول درخواست کدنویسی را بنویس.");
+    showPreview("codePreview", "اول سؤال یا درخواست کدنویسی را بنویس.");
     return;
   }
 
   const button = $("codeBtn");
   button.disabled = true;
-  button.textContent = "در حال دریافت پاسخ...";
+  showPreview("codePreview", "در حال ارسال درخواست...");
+  setStatus("در حال کدنویسی...");
 
   try {
-    const answer = await callChatAPI(
-      "به عنوان دستیار کدنویسی، با زبان " + $("codeLanguage").value +
-      " این درخواست را انجام بده:\n" + prompt
-    );
+    const message = "به‌عنوان دستیار برنامه‌نویسی پاسخ بده و در صورت نیاز کد کامل ارائه کن:\n" + prompt;
+    const data = await requestAPI({
+      action: "chat",
+      mode: "chat",
+      message,
+      prompt: message
+    });
+
+    const answer = data.answer || data.message || data.response;
+    if (typeof answer !== "string" || !answer.trim()) {
+      throw new Error("پاسخ دریافت نشد.");
+    }
+
     showPreview("codePreview", answer);
+    lastAnswer = answer;
+    setStatus("آماده");
   } catch (error) {
     showPreview("codePreview", "خطا: " + error.message);
+    setStatus("خطا");
   } finally {
     button.disabled = false;
-    button.textContent = "ارسال به دستیار کد";
   }
 });
 
-$("speakBtn").addEventListener("click", () => speakPersian($("voiceText").value));
-
-$("stopSpeakBtn").addEventListener("click", () => {
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
-  $("voiceToolStatus").textContent = "خواندن متن متوقف شد.";
-});
-
-$("listenBtn").addEventListener("click", () => {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+function setupSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    $("voiceToolStatus").textContent = "تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود.";
+    showPreview("voicePreview",
+      "تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود. می‌توانی متن را دستی بنویسی.");
+    return null;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = "fa-IR";
+  rec.interimResults = true;
+  rec.continuous = false;
+
+  rec.onstart = () => {
+    setStatus("در حال شنیدن...");
+    $("micBtn").disabled = true;
+  };
+
+  rec.onresult = event => {
+    let transcript = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    $("voiceText").value = transcript;
+  };
+
+  rec.onerror = event => {
+    showPreview("voicePreview", "خطای میکروفون: " + event.error +
+      ". مجوز میکروفون و پشتیبانی مرورگر را بررسی کن.");
+  };
+
+  rec.onend = () => {
+    $("micBtn").disabled = false;
+    setStatus("آماده");
+  };
+
+  return rec;
+}
+
+$("micBtn").addEventListener("click", () => {
+  try {
+    if (!recognition) recognition = setupSpeechRecognition();
+    if (recognition) recognition.start();
+  } catch {
+    showPreview("voicePreview", "میکروفون در دسترس نیست یا قبلاً فعال شده است.");
+  }
+});
+
+$("micStopBtn").addEventListener("click", () => {
+  if (recognition) recognition.stop();
+  $("micBtn").disabled = false;
+});
+
+$("voiceSendBtn").addEventListener("click", () => {
+  const text = $("voiceText").value.trim();
+  if (!text) {
+    showPreview("voicePreview", "ابتدا صحبت کن یا متن را وارد کن.");
     return;
   }
-
-  try {
-    if (recognition) recognition.stop();
-    recognition = new SpeechRecognition();
-    recognition.lang = "fa-IR";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => $("voiceToolStatus").textContent = "گوش می‌دهم...";
-    recognition.onresult = event => {
-      const transcript = event.results[0][0].transcript;
-      $("voiceText").value = transcript;
-      input.value = transcript;
-      $("voiceToolStatus").textContent = "صدا به متن تبدیل شد.";
-    };
-    recognition.onerror = event => $("voiceToolStatus").textContent = "خطای تشخیص صدا: " + event.error;
-    recognition.onend = () => {
-      if ($("voiceToolStatus").textContent === "گوش می‌دهم...") {
-        $("voiceToolStatus").textContent = "ضبط صدا تمام شد.";
-      }
-    };
-    recognition.start();
-  } catch (_) {
-    $("voiceToolStatus").textContent = "شروع میکروفون ناموفق بود. مجوز میکروفون را بررسی کن.";
-  }
+  switchTab("chat");
+  sendChat(text);
 });
 </script>
 </body>
