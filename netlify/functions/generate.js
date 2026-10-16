@@ -1,187 +1,55 @@
-exports.handler = async function (event) {
-const headers = {
-"Content-Type": "application/json; charset=utf-8",
-"Access-Control-Allow-Origin": "*",
-"Access-Control-Allow-Headers": "Content-Type",
-"Access-Control-Allow-Methods": "POST, OPTIONS"
+const fetch = globalThis.fetch;
+
+const corsHeaders = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-const respond = (statusCode, data) => ({
-statusCode,
-headers,
-body: JSON.stringify(data)
-});
-
-if (event.httpMethod === "OPTIONS") {
-return { statusCode: 204, headers, body: "" };
+function reply(data, statusCode = 200) {
+  return {
+    statusCode,
+    headers: corsHeaders,
+    body: JSON.stringify(data),
+  };
 }
 
-if (event.httpMethod !== "POST") {
-return respond(405, {
-error: "فقط درخواست POST پشتیبانی می‌شود."
-});
+function getPrompt(body) {
+  return String(
+    body?.prompt ??
+    body?.message ??
+    body?.text ??
+    body?.input ??
+    ""
+  ).trim();
 }
 
-let body;
-
-try {
-body = JSON.parse(event.body || "{}");
-} catch {
-return respond(400, {
-error: "داده ارسالی معتبر نیست."
-});
-}
-
-const action = body.action || body.mode || "chat";
-const prompt = String(body.prompt || body.message || "").trim();
-
-if (!prompt) {
-return respond(400, {
-error: "متن درخواست خالی است."
-});
-}
-
-try {
-// ساخت تصویر؛ فارسی به انگلیسی با Groq
-if (action === "image") {
-const pollinationsKey = process.env.POLLINATIONS_API_KEY;
-const groqKey = process.env.GROQ_API_KEY;
-
-  if (!pollinationsKey) {
-    return respond(500, {
-      error: "کلید POLLINATIONS_API_KEY در Netlify تنظیم نشده است."
-    });
-  }
-
-  if (!groqKey) {
-    return respond(500, {
-      error: "کلید GROQ_API_KEY در Netlify تنظیم نشده است."
-    });
-  }
-
-  // تبدیل درخواست فارسی به پرامپت تصویری انگلیسی
-  const translationResult = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + groqKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Convert the user's image request into a detailed " +
-              "English image-generation prompt. Preserve the exact " +
-              "meaning, subjects, colors, style and any requested text. " +
-              "Do not answer the user. Return only the English prompt."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.4,
-        max_tokens: 350
-      })
-    }
-  );
-
-  const translationRaw = await translationResult.text();
-  let translationData;
+async function readResponse(response) {
+  const text = await response.text();
 
   try {
-    translationData = JSON.parse(translationRaw);
+    return JSON.parse(text);
   } catch {
-    return respond(502, {
-      error: "پاسخ مترجم هوشمند قابل خواندن نیست."
-    });
+    return { error: text.slice(0, 1200) };
   }
-
-  if (!translationResult.ok) {
-    return respond(translationResult.status, {
-      error:
-        translationData.error?.message ||
-        "تبدیل متن فارسی به پرامپت انگلیسی ناموفق بود."
-    });
-  }
-
-  const englishPrompt =
-    translationData.choices?.[0]?.message?.content?.trim();
-
-  if (!englishPrompt) {
-    return respond(502, {
-      error: "پرامپت انگلیسی ساخته نشد."
-    });
-  }
-
-  // ارسال پرامپت به Pollinations
-  const model = "black-forest-labs/flux.1-schnell";
-  const imageUrl =
-    "https://gen.pollinations.ai/image/" +
-    encodeURIComponent(englishPrompt) +
-    "?model=" + encodeURIComponent(model) +
-    "&width=768&height=768&nologo=true";
-
-  const imageResult = await fetch(imageUrl, {
-    method: "GET",
-    headers: {
-      "Authorization": "Bearer " + pollinationsKey,
-      "Accept": "image/*"
-    }
-  });
-
-  if (!imageResult.ok) {
-    const details = await imageResult.text();
-
-    return respond(imageResult.status, {
-      error: "سرویس ساخت تصویر خطا داد.",
-      details: details.slice(0, 1000)
-    });
-  }
-
-  const contentType =
-    imageResult.headers.get("content-type") || "";
-
-  if (!contentType.startsWith("image/")) {
-    return respond(502, {
-      error: "سرویس به‌جای تصویر، پاسخ معتبری نداد."
-    });
-  }
-
-  const imageBuffer = Buffer.from(
-    await imageResult.arrayBuffer()
-  );
-
-  return respond(200, {
-    image:
-      "data:" + contentType + ";base64," +
-      imageBuffer.toString("base64"),
-    provider: "Pollinations",
-    prompt: englishPrompt
-  });
 }
 
-// چت فعلی با Groq؛ ساختار حفظ شده است
-if (action === "chat" || action === "text") {
+// تبدیل توضیح فارسی تصویر به انگلیسی با Groq
+async function translateImagePrompt(prompt) {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    return respond(500, {
-      error: "متغیر GROQ_API_KEY در Netlify تنظیم نشده است."
-    });
+    throw new Error("کلید GROQ_API_KEY در Netlify تنظیم نشده است.");
   }
 
-  const result = await fetch(
+  const response = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
     {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + apiKey,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "openai/gpt-oss-20b",
@@ -189,62 +57,221 @@ if (action === "chat" || action === "text") {
           {
             role: "system",
             content:
-              "تو mi.AI هستی، یک دستیار هوش مصنوعی. " +
-              "به فارسی روان پاسخ بده، مگر اینکه کاربر زبان دیگری بخواهد. " +
-              "در برنامه‌نویسی دقیق و کاربردی کمک کن."
+              "Convert the user's image request into a detailed English image-generation prompt. Preserve the original meaning and visual details. Return only the English prompt, without explanations."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 1800
+        temperature: 0.3,
+        max_tokens: 300
       })
     }
   );
 
-  const raw = await result.text();
-  let data;
+  const data = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(
+      `خطای تبدیل توضیح تصویر (${response.status}): ` +
+      (data.error?.message || data.error || "خطای Groq")
+    );
+  }
+
+  const translated = data.choices?.[0]?.message?.content?.trim();
+
+  if (!translated) {
+    throw new Error("توضیح انگلیسی تصویر ساخته نشد.");
+  }
+
+  return translated;
+}
+
+// ساخت تصویر
+async function generateImage(prompt) {
+  const apiKey = process.env.POLLINATIONS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "کلید POLLINATIONS_API_KEY در تنظیمات Netlify پیدا نشد."
+    );
+  }
+
+  const englishPrompt = await translateImagePrompt(prompt);
+
+  const url = new URL(
+    "https://gen.pollinations.ai/image/" +
+    encodeURIComponent(englishPrompt)
+  );
+
+  url.searchParams.set("model", "flux");
+  url.searchParams.set("width", "768");
+  url.searchParams.set("height", "768");
+  url.searchParams.set("nologo", "true");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "image/*"
+    }
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+
+    throw new Error(
+      `خطای سرویس تصویر (${response.status}): ` +
+      details.slice(0, 500)
+    );
+  }
+
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  if (!contentType.startsWith("image/")) {
+    const details = await response.text();
+
+    throw new Error(
+      "سرویس تصویر به‌جای عکس، پاسخ دیگری فرستاد: " +
+      details.slice(0, 300)
+    );
+  }
+
+  const imageBuffer = Buffer.from(
+    await response.arrayBuffer()
+  );
+
+  if (!imageBuffer.length) {
+    throw new Error("تصویر دریافتی خالی است.");
+  }
+
+  return {
+    image:
+      `data:${contentType};base64,` +
+      imageBuffer.toString("base64"),
+    provider: "Pollinations",
+    prompt: englishPrompt
+  };
+}
+
+// پاسخ متنی چت
+async function generateChat(prompt, history = []) {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("کلید GROQ_API_KEY در Netlify تنظیم نشده است.");
+  }
+
+  const messages = [
+    {
+      role: "system",
+      content:
+        "تو دستیار هوش مصنوعی mi.AI هستی. به زبان کاربر، معمولاً فارسی، واضح و مفید پاسخ بده."
+    },
+    ...(Array.isArray(history)
+      ? history
+          .filter(
+            item =>
+              item &&
+              ["user", "assistant"].includes(item.role) &&
+              typeof item.content === "string"
+          )
+          .slice(-12)
+      : []),
+    {
+      role: "user",
+      content: prompt
+    }
+  ];
+
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages,
+        temperature: 0.7,
+        max_tokens: 1200
+      })
+    }
+  );
+
+  const data = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(
+      `خطای چت (${response.status}): ` +
+      (data.error?.message || data.error || "خطای Groq")
+    );
+  }
+
+  const text = data.choices?.[0]?.message?.content?.trim();
+
+  if (!text) {
+    throw new Error("پاسخ متنی دریافت نشد.");
+  }
+
+  return { reply: text, response: text };
+}
+
+exports.handler = async event => {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: corsHeaders,
+      body: ""
+    };
+  }
+
+  if (event.httpMethod !== "POST") {
+    return reply({
+      error: "این مسیر فقط درخواست POST می‌پذیرد."
+    }, 405);
+  }
 
   try {
-    data = JSON.parse(raw);
-  } catch {
-    return respond(502, {
-      error: "پاسخ Groq قابل خواندن نیست."
-    });
+    let body;
+
+    try {
+      body = JSON.parse(event.body || "{}");
+    } catch {
+      return reply({ error: "بدنهٔ درخواست JSON معتبر نیست." }, 400);
+    }
+
+    const action = String(body.action || "chat").toLowerCase();
+    const prompt = getPrompt(body);
+
+    if (!prompt) {
+      return reply({ error: "لطفاً ابتدا پیام یا توضیح تصویر را بنویس." }, 400);
+    }
+
+    if (action === "image") {
+      const result = await generateImage(prompt);
+      return reply(result);
+    }
+
+    if (action === "chat" || action === "text") {
+      const result = await generateChat(
+        prompt,
+        body.history || body.messages || []
+      );
+      return reply(result);
+    }
+
+    return reply({
+      error: `عملیات «${action}» هنوز در این تابع پیاده‌سازی نشده است.`
+    }, 400);
+
+  } catch (error) {
+    return reply({
+      error: error?.message || "خطای ناشناخته در سرور mi.AI"
+    }, 500);
   }
-
-  if (!result.ok) {
-    return respond(result.status, {
-      error:
-        data.error?.message ||
-        "خطا در دریافت پاسخ از Groq."
-    });
-  }
-
-  const answer = data.choices?.[0]?.message?.content;
-
-  if (typeof answer !== "string" || !answer.trim()) {
-    return respond(502, {
-      error: "پاسخ متنی معتبری دریافت نشد."
-    });
-  }
-
-  return respond(200, {
-    answer: answer.trim(),
-    provider: "Groq"
-  });
-}
-
-return respond(400, {
-  error: "این عملیات پشتیبانی نمی‌شود: " + action
-});
-
-} catch (error) {
-return respond(500, {
-error: "خطای داخلی سرور.",
-details: error.message || "خطای ناشناخته"
-});
-}
 };
