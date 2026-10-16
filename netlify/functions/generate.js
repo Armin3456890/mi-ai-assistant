@@ -1,335 +1,175 @@
 
-const fetch = globalThis.fetch;
+const MODEL = "fal-ai/kling-video/v3/turbo/standard/text-to-video";
+const BASE_URL = "https://queue.fal.run";
 
-const corsHeaders = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+exports.handler = async (event) => {
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS"
+  };
 
-function reply(data, statusCode = 200) {
-  return {
+  const reply = (statusCode, data) => ({
     statusCode,
-    headers: corsHeaders,
-    body: JSON.stringify(data),
-  };
-}
-
-function getPrompt(body) {
-  return String(
-    body?.prompt ??
-    body?.message ??
-    body?.text ??
-    body?.input ??
-    ""
-  ).trim();
-}
-
-async function readResponse(response) {
-  const text = await response.text();
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { error: text.slice(0, 1200) };
-  }
-}
-
-async function translatePrompt(prompt, kind = "image") {
-  const apiKey = process.env.GROQ_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("کلید GROQ_API_KEY در Netlify تنظیم نشده است.");
-  }
-
-  const instruction = kind === "video"
-    ? "Convert the user's request into a detailed English text-to-video prompt. Describe the scene, motion, camera movement, lighting and visual style. Preserve the user's meaning. Return only the prompt."
-    : "Convert the user's request into a detailed English image-generation prompt. Preserve the original meaning and visual details. Return only the prompt.";
-
-  const response = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: instruction },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 350
-      })
-    }
-  );
-
-  const data = await readResponse(response);
-
-  if (!response.ok) {
-    throw new Error(
-      `خطای آماده‌سازی توضیح (${response.status}): ` +
-      (data.error?.message || data.error || "خطای Groq")
-    );
-  }
-
-  const translated = data.choices?.[0]?.message?.content?.trim();
-
-  if (!translated) {
-    throw new Error("توضیح انگلیسی تولید نشد.");
-  }
-
-  return translated;
-}
-
-// ساخت تصویر
-async function generateImage(prompt) {
-  const apiKey = process.env.POLLINATIONS_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("کلید POLLINATIONS_API_KEY در Netlify پیدا نشد.");
-  }
-
-  const englishPrompt = await translatePrompt(prompt, "image");
-
-  const url = new URL(
-    "https://gen.pollinations.ai/image/" +
-    encodeURIComponent(englishPrompt)
-  );
-
-  url.searchParams.set("model", "flux");
-  url.searchParams.set("width", "768");
-  url.searchParams.set("height", "768");
-  url.searchParams.set("nologo", "true");
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "image/*"
-    }
+    headers,
+    body: JSON.stringify(data)
   });
 
-  if (!response.ok) {
-    throw new Error(
-      `خطای سرویس تصویر (${response.status}): ` +
-      (await response.text()).slice(0, 500)
-    );
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-
-  if (!contentType.startsWith("image/")) {
-    throw new Error("سرویس تصویر خروجی تصویری برنگرداند.");
-  }
-
-  const imageBuffer = Buffer.from(await response.arrayBuffer());
-
-  if (!imageBuffer.length) {
-    throw new Error("تصویر دریافتی خالی است.");
-  }
-
-  return {
-    image: `data:${contentType};base64,${imageBuffer.toString("base64")}`,
-    provider: "Pollinations",
-    prompt: englishPrompt
-  };
-}
-
-// ساخت ویدئو
-async function generateVideo(prompt) {
-  const apiKey = process.env.POLLINATIONS_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("کلید POLLINATIONS_API_KEY در Netlify پیدا نشد.");
-  }
-
-  const englishPrompt = await translatePrompt(prompt, "video");
-
-  const url = new URL(
-    "https://gen.pollinations.ai/video/" +
-    encodeURIComponent(englishPrompt)
-  );
-
-  url.searchParams.set("model", "google/veo-3.1-fast");
-  url.searchParams.set("duration", "4");
-  url.searchParams.set("aspectRatio", "16:9");
-
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "video/mp4"
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `خطای سرویس ویدئو (${response.status}): ` +
-      (await response.text()).slice(0, 700)
-    );
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-
-  if (
-    !contentType.startsWith("video/") &&
-    !contentType.includes("octet-stream")
-  ) {
-    throw new Error(
-      "سرویس ویدئو به‌جای فایل ویدئویی، نوع محتوای دیگری فرستاد."
-    );
-  }
-
-  const videoBuffer = Buffer.from(await response.arrayBuffer());
-
-  if (!videoBuffer.length) {
-    throw new Error("فایل ویدئوی دریافتی خالی است.");
-  }
-
-  // پاسخ تابع Netlify محدودیت حجم دارد.
-  // فایل بزرگ‌تر را رد می‌کنیم تا خطای مبهم ایجاد نشود.
-  if (videoBuffer.length > 4 * 1024 * 1024) {
-    throw new Error(
-      "حجم ویدئو برای پاسخ مستقیم Netlify زیاد است. " +
-      "باید روش تحویل فایل را تغییر دهیم."
-    );
-  }
-
-  return {
-    statusCode: 200,
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "video/mp4",
-      "Content-Disposition": 'inline; filename="mi-ai-video.mp4"',
-      "Cache-Control": "no-store"
-    },
-    isBase64Encoded: true,
-    body: videoBuffer.toString("base64")
-  };
-}
-
-// پاسخ متنی چت
-async function generateChat(prompt, history = []) {
-  const apiKey = process.env.GROQ_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("کلید GROQ_API_KEY در Netlify تنظیم نشده است.");
-  }
-
-  const messages = [
-    {
-      role: "system",
-      content:
-        "تو دستیار هوش مصنوعی mi.AI هستی. به زبان کاربر، معمولاً فارسی، واضح و مفید پاسخ بده."
-    },
-    ...(Array.isArray(history)
-      ? history
-          .filter(
-            item =>
-              item &&
-              ["user", "assistant"].includes(item.role) &&
-              typeof item.content === "string"
-          )
-          .slice(-12)
-      : []),
-    { role: "user", content: prompt }
-  ];
-
-  const response = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages,
-        temperature: 0.7,
-        max_tokens: 1200
-      })
-    }
-  );
-
-  const data = await readResponse(response);
-
-  if (!response.ok) {
-    throw new Error(
-      `خطای چت (${response.status}): ` +
-      (data.error?.message || data.error || "خطای Groq")
-    );
-  }
-
-  const text = data.choices?.[0]?.message?.content?.trim();
-
-  if (!text) {
-    throw new Error("پاسخ متنی دریافت نشد.");
-  }
-
-  return { reply: text, response: text };
-}
-
-exports.handler = async event => {
   if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 204,
-      headers: corsHeaders,
-      body: ""
-    };
+    return { statusCode: 204, headers, body: "" };
   }
 
   if (event.httpMethod !== "POST") {
-    return reply({
+    return reply(405, {
       error: "این مسیر فقط درخواست POST می‌پذیرد."
-    }, 405);
+    });
+  }
+
+  const apiKey = process.env.FAL_KEY;
+
+  if (!apiKey) {
+    return reply(500, {
+      error: "کلید FAL_KEY در تنظیمات Netlify پیدا نشد."
+    });
   }
 
   try {
-    let body;
-
-    try {
-      body = JSON.parse(event.body || "{}");
-    } catch {
-      return reply({ error: "بدنهٔ درخواست JSON معتبر نیست." }, 400);
-    }
-
-    const action = String(body.action || "chat").toLowerCase();
-    const prompt = getPrompt(body);
-
-    if (!prompt) {
-      return reply({
-        error: "لطفاً ابتدا توضیحات را وارد کن."
-      }, 400);
-    }
-
-    if (action === "image") {
-      return reply(await generateImage(prompt));
-    }
+    const body = JSON.parse(event.body || "{}");
+    const action = body.action;
+    const authHeaders = {
+      "Authorization": `Key ${apiKey}`,
+      "Content-Type": "application/json"
+    };
 
     if (action === "video") {
-      return await generateVideo(prompt);
-    }
+      const prompt = String(body.prompt || "").trim();
 
-    if (action === "chat" || action === "text") {
-      return reply(
-        await generateChat(
+      if (!prompt) {
+        return reply(400, {
+          error: "لطفاً توضیحات ویدئو را وارد کن."
+        });
+      }
+
+      if (prompt.length > 2500) {
+        return reply(400, {
+          error: "توضیحات ویدئو باید حداکثر ۲۵۰۰ کاراکتر باشد."
+        });
+      }
+
+      const response = await fetch(`${BASE_URL}/${MODEL}`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
           prompt,
-          body.history || body.messages || []
-        )
-      );
+          duration: "5",
+          aspect_ratio: "16:9"
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        return reply(response.status, {
+          error: "fal.ai درخواست ساخت ویدئو را نپذیرفت.",
+          details: data
+        });
+      }
+
+      if (!data.request_id) {
+        return reply(502, {
+          error: "شناسه درخواست از fal.ai دریافت نشد.",
+          details: data
+        });
+      }
+
+      return reply(200, {
+        success: true,
+        request_id: data.request_id,
+        status: "IN_QUEUE",
+        message: "درخواست ساخت ویدئو ثبت شد."
+      });
     }
 
-    return reply({
-      error: `عملیات «${action}» هنوز پیاده‌سازی نشده است.`
-    }, 400);
+    if (action === "video_status") {
+      const requestId = String(body.request_id || "").trim();
+
+      if (!requestId) {
+        return reply(400, {
+          error: "شناسه درخواست ارسال نشده است."
+        });
+      }
+
+      const statusResponse = await fetch(
+        `${BASE_URL}/${MODEL}/requests/${encodeURIComponent(requestId)}/status`,
+        { headers: authHeaders }
+      );
+
+      const statusData = await statusResponse.json().catch(() => ({}));
+
+      if (!statusResponse.ok) {
+        return reply(statusResponse.status, {
+          error: "بررسی وضعیت ویدئو ناموفق بود.",
+          details: statusData
+        });
+      }
+
+      const status = statusData.status;
+
+      if (status === "COMPLETED") {
+        const resultResponse = await fetch(
+          `${BASE_URL}/${MODEL}/requests/${encodeURIComponent(requestId)}`,
+          { headers: authHeaders }
+        );
+
+        const resultData = await resultResponse.json().catch(() => ({}));
+
+        if (!resultResponse.ok) {
+          return reply(resultResponse.status, {
+            error: "دریافت ویدئوی ساخته‌شده ناموفق بود.",
+            details: resultData
+          });
+        }
+
+        const videoUrl = resultData.video?.url;
+
+        if (!videoUrl) {
+          return reply(502, {
+            error: "لینک ویدئو در پاسخ fal.ai پیدا نشد.",
+            details: resultData
+          });
+        }
+
+        return reply(200, {
+          success: true,
+          status: "COMPLETED",
+          video_url: videoUrl
+        });
+      }
+
+      if (status === "FAILED") {
+        return reply(502, {
+          error: "ساخت ویدئو توسط fal.ai ناموفق بود.",
+          details: statusData
+        });
+      }
+
+      return reply(200, {
+        success: true,
+        status: status || "IN_PROGRESS",
+        message: "ویدئو هنوز در حال ساخت است."
+      });
+    }
+
+    return reply(400, {
+      error: "عملیات نامعتبر است.",
+      supported_actions: ["video", "video_status"]
+    });
 
   } catch (error) {
-    return reply({
-      error: error?.message || "خطای ناشناخته در سرور mi.AI"
-    }, 500);
+    return reply(500, {
+      error: "خطای داخلی در تابع mi.AI رخ داد.",
+      details: error.message
+    });
   }
 };
