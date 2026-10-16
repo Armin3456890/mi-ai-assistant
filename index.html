@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10111a">
+<title>mi.AI</title>
+
+<style>
+*{box-sizing:border-box}
+:root{
+  color-scheme:dark;
+  --bg:#10111a;
+  --panel:#191b28;
+  --panel2:#222437;
+  --text:#f4f5ff;
+  --muted:#a4a8c1;
+  --accent:#9275ff;
+  --border:#303248
+}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,Tahoma,sans-serif;
+  min-height:100dvh
+}
+button,textarea,input,select{font:inherit}
+button{cursor:pointer;color:var(--text)}
+button:disabled{opacity:.55;cursor:wait}
+.app{
+  width:100%;
+  max-width:850px;
+  margin:auto;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column
+}
+header{
+  padding:17px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  background:#10111aee;
+  backdrop-filter:blur(12px);
+  z-index:5
+}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{
+  width:43px;
+  height:43px;
+  border-radius:15px;
+  display:grid;
+  place-items:center;
+  font-size:21px;
+  font-weight:800;
+  background:linear-gradient(135deg,#9275ff,#5142bb);
+  box-shadow:0 5px 22px #745bff44
+}
+h1{font-size:19px;margin:0}
+.subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+.status{color:#80e3b1;font-size:12px;white-space:nowrap}
+nav{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  padding:12px;
+  border-bottom:1px solid var(--border)
+}
+.tab{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:12px 4px;
+  border-radius:13px;
+  font-size:13px
+}
+.tab.active{
+  background:#342b5c;
+  border-color:var(--accent);
+  color:#dcd3ff
+}
+main{flex:1;padding:17px;padding-bottom:25px}
+.welcome{text-align:center;padding:35px 8px 24px}
+.welcome-icon{font-size:45px;margin-bottom:12px}
+.welcome h2{font-size:23px;margin:0 0 10px}
+.welcome p{
+  color:var(--muted);
+  line-height:1.9;
+  font-size:14px;
+  margin:0
+}
+.suggestions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  margin-top:23px
+}
+.suggestion{
+  text-align:right;
+  padding:13px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  font-size:13px;
+  line-height:1.7
+}
+.suggestion span{display:block;font-size:19px;margin-bottom:5px}
+#messages{display:flex;flex-direction:column;gap:15px;padding-bottom:18px}
+.message{
+  max-width:90%;
+  padding:12px 14px;
+  border-radius:16px;
+  line-height:1.9;
+  font-size:14px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+.message.user{
+  align-self:flex-start;
+  background:#39305f;
+  border-bottom-left-radius:5px
+}
+.message.ai{
+  align-self:flex-end;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-bottom-right-radius:5px
+}
+.message.error{border-color:#a84959;color:#ffb7c0}
+.message-content{white-space:pre-wrap;overflow-wrap:anywhere}
+.message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.message-actions button{
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:11px;
+  padding:8px 10px;
+  font-size:12px
+}
+.composer{
+  position:sticky;
+  bottom:0;
+  background:#10111af5;
+  border-top:1px solid var(--border);
+  padding:12px;
+  padding-bottom:max(12px,env(safe-area-inset-bottom));
+  z-index:4
+}
+.input-box{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:10px
+}
+textarea{
+  display:block;
+  width:100%;
+  resize:vertical;
+  min-height:48px;
+  max-height:180px;
+  color:var(--text);
+  background:transparent;
+  border:1px solid transparent;
+  outline:none;
+  padding:8px;
+  line-height:1.8
+}
+textarea:focus{border-color:#5142bb}
+.composer-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+  flex-wrap:wrap
+}
+.mode-label{color:var(--muted);font-size:12px;flex:1}
+.send{
+  border:0;
+  border-radius:12px;
+  padding:11px 18px;
+  background:var(--accent);
+  font-weight:700
+}
+.clear,.small-btn{
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:11px;
+  padding:9px;
+  font-size:12px
+}
+.tool-panel{display:none}
+.tool-panel.active{display:block}
+.card{
+  padding:18px;
+  border-radius:18px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  margin-bottom:14px
+}
+.card h2{font-size:19px;margin:0 0 10px}
+.card p{font-size:13px;color:var(--muted);line-height:1.9}
+.field-label{display:block;margin:15px 0 8px;font-size:13px}
+.field{
+  width:100%;
+  padding:13px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--bg);
+  color:var(--text);
+  outline:none
+}
+.primary{
+  width:100%;
+  margin-top:13px;
+  border:none;
+  border-radius:12px;
+  background:var(--accent);
+  padding:13px;
+  font-weight:700
+}
+.secondary{
+  width:100%;
+  margin-top:9px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--panel2);
+  padding:12px
+}
+.preview{
+  display:none;
+  margin-top:15px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  overflow-wrap:anywhere;
+  line-height:1.9;
+  font-size:13px;
+  white-space:pre-wrap
+}
+.preview img,.preview video{
+  width:100%;
+  border-radius:10px;
+  margin-top:8px
+}
+.notice{color:var(--muted);font-size:12px;line-height:1.9;margin-top:12px}
+.hidden{display:none!important}
+.tool-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px
+}
+.tool-choice{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px;
+  text-align:right;
+  line-height:1.7
+}
+.tool-choice strong{display:block;margin-bottom:4px}
+.tool-choice span{color:var(--muted);font-size:12px}
+@media(min-width:650px){
+  main{padding:25px}
+  .welcome{padding-top:55px}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <div class="logo">mi</div>
+    <div>
+      <h1>mi.AI</h1>
+      <div class="subtitle">دستیار هوش مصنوعی تو</div>
+    </div>
+  </div>
+  <div class="status" id="status">● آماده</div>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="chat">چت هوشمند</button>
+  <button class="tab" data-tab="image">ساخت عکس</button>
+  <button class="tab" data-tab="video">ساخت ویدئو</button>
+  <button class="tab" data-tab="music">ساخت موسیقی</button>
+  <button class="tab" data-tab="code">کدنویسی</button>
+  <button class="tab" data-tab="voice">دستیار صدا</button>
+</nav>
+
+<main>
+<section id="chat" class="tool-panel active">
+  <div class="welcome" id="welcome">
+    <div class="welcome-icon">✦</div>
+    <h2>سلام! من mi.AI هستم</h2>
+    <p>چه کاری برات انجام بدم؟<br>سؤال بپرس، ایده بگیر یا یک پروژه جدید شروع کن.</p>
+    <div class="suggestions">
+      <button class="suggestion" data-prompt="یک داستان علمی تخیلی کوتاه بنویس"><span>✍️</span>نوشتن داستان</button>
+      <button class="suggestion" data-prompt="چند ایده خلاقانه برای ساخت بازی موبایل بده"><span>🎮</span>ایده بازی</button>
+      <button class="suggestion" data-prompt="هوش مصنوعی را ساده توضیح بده"><span>🧠</span>یادگیری</button>
+      <button class="suggestion" data-prompt="یک ایده سینمایی برای ساخت تصویر پیشنهاد بده"><span>🎨</span>ایده تصویر</button>
+    </div>
+  </div>
+  <div id="messages"></div>
+  <div id="voiceStatus" class="notice" aria-live="polite"></div>
+</section>
+<section id="image" class="tool-panel">
+  <div class="card">
+    <h2>🎨 ساخت تصویر</h2>
+    <p>توضیحات تصویر را وارد کن. تولید واقعی به اتصال سرویس تصویر نیاز دارد.</p>
+    <label class="field-label" for="imagePrompt">توضیحات تصویر</label>
+    <textarea class="field" id="imagePrompt" rows="4" placeholder="A black dragon with red eyes, cinematic 3D style..."></textarea>
+    <button class="primary" id="imageBtn">ساخت تصویر</button>
+    <div class="preview" id="imagePreview"></div>
+  </div>
+</section>
+
+<section id="video" class="tool-panel">
+  <div class="card">
+    <h2>🎬 ساخت ویدئو</h2>
+    <p>توضیح صحنه را وارد کن. تولید واقعی به سرویس ویدئو نیاز دارد.</p>
+    <label class="field-label" for="videoPrompt">توضیحات ویدئو</label>
+    <textarea class="field" id="videoPrompt" rows="4" placeholder="A cinematic camera approaches a futuristic city..."></textarea>
+    <label class="field-label" for="videoDuration">مدت ویدئو</label>
+    <select class="field" id="videoDuration">
+      <option value="5">۵ ثانیه</option>
+      <option value="10">۱۰ ثانیه</option>
+      <option value="15">۱۵ ثانیه</option>
+    </select>
+    <button class="primary" id="videoBtn">ساخت ویدئو</button>
+    <div class="preview" id="videoPreview"></div>
+  </div>
+</section>
+
+<section id="music" class="tool-panel">
+  <div class="card">
+    <h2>🎵 ساخت موسیقی</h2>
+    <p>سبک و توضیحات موسیقی را وارد کن. تولید واقعی به سرویس موسیقی نیاز دارد.</p>
+    <label class="field-label" for="musicPrompt">توضیحات موسیقی</label>
+    <textarea class="field" id="musicPrompt" rows="4" placeholder="Epic cinematic music, dark atmosphere, powerful drums..."></textarea>
+    <label class="field-label" for="musicStyle">سبک موسیقی</label>
+    <select class="field" id="musicStyle">
+      <option value="cinematic">سینمایی</option>
+      <option value="electronic">الکترونیک</option>
+      <option value="ambient">آرام و محیطی</option>
+      <option value="game">موسیقی بازی</option>
+      <option value="pop">پاپ</option>
+    </select>
+    <button class="primary" id="musicBtn">آماده‌سازی موسیقی</button>
+    <div class="preview" id="musicPreview"></div>
+  </div>
+</section>
+
+<section id="code" class="tool-panel">
+  <div class="card">
+    <h2>💻 دستیار کدنویسی</h2>
+    <p>زبان برنامه‌نویسی و درخواستت را وارد کن.</p>
+    <label class="field-label" for="codeLanguage">زبان برنامه‌نویسی</label>
+    <select class="field" id="codeLanguage">
+      <option>JavaScript</option>
+      <option>HTML / CSS</option>
+      <option>Python</option>
+      <option>GDScript (Godot)</option>
+      <option>Java</option>
+      <option>C#</option>
+    </select>
+    <label class="field-label" for="codePrompt">درخواست کدنویسی</label>
+    <textarea class="field" id="codePrompt" rows="5" placeholder="کدی بنویس که..."></textarea>
+    <button class="primary" id="codeBtn">ارسال به دستیار کد</button>
+    <div class="preview" id="codePreview"></div>
+  </div>
+</section>
+
+<section id="voice" class="tool-panel">
+  <div class="card">
+    <h2>🎙️ دستیار صدا</h2>
+    <p>متن را با صدای دستگاه بخوان یا در مرورگر سازگار از میکروفون استفاده کن.</p>
+    <label class="field-label" for="voiceText">متن برای خواندن</label>
+    <textarea class="field" id="voiceText" rows="4" placeholder="متنی که می‌خواهی با صدا خوانده شود..."></textarea>
+    <button class="primary" id="speakBtn">🔊 خواندن متن</button>
+    <button class="secondary" id="stopSpeakBtn">توقف صدا</button>
+    <button class="secondary" id="listenBtn">🎙️ شروع تشخیص گفتار</button>
+    <div class="preview" id="voicePreview"></div>
+    <div class="notice">پشتیبانی فارسی به مرورگر و صداهای نصب‌شده بستگی دارد.</div>
+  </div>
+</section>
+</main>
+
+<section class="composer" id="composer">
+  <div class="input-box">
+    <textarea id="messageInput" placeholder="پیامت رو برای mi.AI بنویس..." rows="1"></textarea>
+    <div class="composer-actions">
+      <span class="mode-label">گفت‌وگوی فارسی</span>
+      <button class="clear" id="clearBtn">گفت‌وگوی جدید</button>
+      <button class="send" id="sendBtn">ارسال ↑</button>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const tabs = document.querySelectorAll("[data-tab]");
+const panels = document.querySelectorAll(".tool-panel");
+const messages = $("messages");
+const input = $("messageInput");
+const sendBtn = $("sendBtn");
+const status = $("status");
+const voiceStatus = $("voiceStatus");
+
+let busy = false;
+let recognition = null;
+
+function setStatus(text) {
+  status.textContent = text;
+}
+
+function switchTab(name) {
+  tabs.forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.tab === name);
+  });
+
+  panels.forEach(panel => {
+    panel.classList.toggle("active", panel.id === name);
+  });
+
+  $("composer").classList.toggle("hidden", name !== "chat");
+  setStatus("● " + (name === "chat" ? "چت" : "بخش " + name));
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+});
+
+document.querySelectorAll("[data-prompt]").forEach(button => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.prompt;
+    switchTab("chat");
+    input.focus();
+  });
+});
+
+function speakPersian(text) {
+  if (!("speechSynthesis" in window)) {
+    voiceStatus.textContent = "مرورگر از خواندن متن پشتیبانی نمی‌کند.";
+    return;
+  }
+
+  const cleanText = String(text || "").trim();
+
+  if (!cleanText) {
+    voiceStatus.textContent = "متنی برای خواندن وجود ندارد.";
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.lang = "fa-IR";
+  utterance.rate = 0.9;
+  utterance.pitch = 1;
+
+  const voices = window.speechSynthesis.getVoices();
+  const faVoice = voices.find(v => /^fa([_-]|$)/i.test(v.lang));
+
+  if (faVoice) utterance.voice = faVoice;
+
+  utterance.onstart = () => {
+    voiceStatus.textContent = "در حال خواندن متن...";
+  };
+
+  utterance.onend = () => {
+    voiceStatus.textContent = "خواندن تمام شد.";
+  };
+
+  utterance.onerror = () => {
+    voiceStatus.textContent = "پخش صدا انجام نشد.";
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function addMessage(text, who, isError = false) {
+  $("welcome").classList.add("hidden");
+
+  const bubble = document.createElement("div");
+  bubble.className = "message " + who + (isError ? " error" : "");
+
+  const content = document.createElement("div");
+  content.className = "message-content";
+  content.textContent = text;
+
+  bubble.appendChild(content);
+  bubble.messageContent = content;
+
+  if (who === "ai" && !isError) {
+    const actions = document.createElement("div");
+    actions.className = "message-actions";
+
+    const speak = document.createElement("button");
+    speak.type = "button";
+    speak.textContent = "🔊 شنیدن پاسخ";
+    speak.addEventListener("click", () => {
+      speakPersian(content.textContent);
+    });
+
+    const stop = document.createElement("button");
+    stop.type = "button";
+    stop.textContent = "⏹ توقف صدا";
+    stop.addEventListener("click", () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      voiceStatus.textContent = "پخش صدا متوقف شد.";
+    });
+
+    actions.append(speak, stop);
+    bubble.appendChild(actions);
+  }
+
+  messages.appendChild(bubble);
+  bubble.scrollIntoView({behavior: "smooth", block: "end"});
+
+  return bubble;
+}
+</script>
+<script>
+const API_URL = "";
+
+async function callChatAPI(message) {
+  if (!API_URL) {
+    throw new Error(
+      "اتصال موتور هوش مصنوعی هنوز تنظیم نشده است. فعلاً رابط برنامه آماده است."
+    );
+  }
+
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: message,
+      action: "chat"
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "خطا در ارتباط با سرویس");
+  }
+
+  const answer =
+    data.answer ||
+    data.response ||
+    data.message ||
+    data.result;
+
+  if (!answer) {
+    throw new Error("پاسخی از سرویس دریافت نشد.");
+  }
+
+  return String(answer);
+}
+
+async function sendMessage() {
+  const message = input.value.trim();
+
+  if (busy) return;
+
+  if (!message) {
+    setStatus("پیام خالی است");
+    input.focus();
+    return;
+  }
+
+  addMessage(message, "user");
+  input.value = "";
+
+  busy = true;
+  sendBtn.disabled = true;
+
+  setStatus("در حال پردازش...");
+  const waiting = addMessage("در حال آماده‌سازی پاسخ...", "ai");
+
+  try {
+    const answer = await callChatAPI(message);
+
+    waiting.textContent = answer;
+    setStatus("پاسخ دریافت شد");
+  } catch (error) {
+    waiting.textContent =
+      "خطا: " + (error.message || "مشکلی پیش آمد.");
+
+    waiting.classList.add("error");
+    setStatus("اتصال آماده نیست");
+  } finally {
+    busy = false;
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+sendBtn.addEventListener("click", sendMessage);
+
+input.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+$("clearBtn").addEventListener("click", () => {
+  messages.innerHTML = "";
+  $("welcome").style.display = "block";
+  setStatus("گفت‌وگوی جدید آماده است");
+});
+
+function showPreview(id, text) {
+  const output = $(id);
+
+  if (!output) return;
+
+  output.textContent = text;
+  output.classList.add("visible");
+}
+
+$("imageBtn").addEventListener("click", () => {
+  const prompt = $("imagePrompt").value.trim();
+
+  if (!prompt) {
+    showPreview("imageResult", "اول توضیح تصویر را بنویس.");
+    return;
+  }
+
+  showPreview(
+    "imageResult",
+    "درخواست تصویر آماده است.\n\nتوضیح: " +
+    prompt +
+    "\n\nبرای تولید واقعی تصویر، اتصال سرویس تصویر لازم است."
+  );
+});
+
+$("videoBtn").addEventListener("click", () => {
+  const prompt = $("videoPrompt").value.trim();
+
+  if (!prompt) {
+    showPreview("videoResult", "پیام خالی است؛ اول توضیح ویدئو را بنویس.");
+    return;
+  }
+
+  showPreview(
+    "videoResult",
+    "درخواست ویدئو آماده شد.\n\nتوضیح: " +
+    prompt +
+    "\n\nبرای تولید واقعی ویدئو، اتصال سرویس ویدئو لازم است."
+  );
+});
+
+$("musicBtn").addEventListener("click", () => {
+  const prompt = $("musicPrompt").value.trim();
+
+  if (!prompt) {
+    showPreview("musicResult", "اول سبک موسیقی موردنظرت را بنویس.");
+    return;
+  }
+
+  showPreview(
+    "musicResult",
+    "درخواست موسیقی آماده شد.\n\nتوضیح: " +
+    prompt +
+    "\n\nبرای ساخت فایل صوتی واقعی، اتصال سرویس موسیقی لازم است."
+  );
+});
+
+$("codeBtn").addEventListener("click", () => {
+  const prompt = $("codePrompt").value.trim();
+
+  if (!prompt) {
+    showPreview("codeResult", "اول توضیح بده چه کدی می‌خواهی.");
+    return;
+  }
+
+  showPreview(
+    "codeResult",
+    "درخواست کدنویسی ثبت شد:\n\n" +
+    prompt +
+    "\n\nبرای دریافت پاسخ هوش مصنوعی، اتصال سرویس چت لازم است."
+  );
+});
+
+$("speakBtn").addEventListener("click", () => {
+  if (!("speechSynthesis" in window)) {
+    voiceStatus.textContent =
+      "مرورگر این قابلیت را پشتیبانی نمی‌کند.";
+    return;
+  }
+
+  const textToSpeak = input.value.trim();
+
+  if (!textToSpeak) {
+    voiceStatus.textContent =
+      "اول متن را در کادر چت بنویس.";
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
+  utterance.lang = "fa-IR";
+  utterance.rate = 1;
+
+  window.speechSynthesis.speak(utterance);
+  voiceStatus.textContent = "در حال خواندن متن...";
+});
+
+$("stopSpeakBtn").addEventListener("click", () => {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    voiceStatus.textContent = "خواندن متن متوقف شد.";
+  }
+});
+
+$("listenBtn").addEventListener("click", () => {
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    voiceStatus.textContent =
+      "تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود.";
+    return;
+  }
+
+  if (recognition) {
+    recognition.stop();
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "fa-IR";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    voiceStatus.textContent = "گوش می‌دهم...";
+  };
+
+  recognition.onresult = event => {
+    const transcript =
+      event.results[0][0].transcript;
+
+    input.value = transcript;
+    voiceStatus.textContent =
+      "صدا به متن تبدیل شد.";
+  };
+
+  recognition.onerror = event => {
+    voiceStatus.textContent =
+      "خطای تشخیص صدا: " + event.error;
+  };
+
+  recognition.onend = () => {
+    if (voiceStatus.textContent === "گوش می‌دهم...") {
+      voiceStatus.textContent = "ضبط صدا تمام شد.";
+    }
+  };
+
+  recognition.start();
+});
+</script>
+
+</body>
+  </html>
