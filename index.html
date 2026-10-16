@@ -105,7 +105,7 @@ textarea:focus{border-color:#5142bb}
     <h2>🎨 ساخت تصویر</h2>
     <p>توضیحات تصویر را وارد کن تا موتور ساخت تصویر آن را پردازش کند.</p>
     <label class="field-label" for="imagePrompt">توضیحات تصویر</label>
-    <textarea class="field" id="imagePrompt" rows="4" placeholder="A black dragon with red eyes, cinematic 3D style..."></textarea>
+    <textarea class="field" id="imagePrompt" rows="4" placeholder="یک اژدهای سیاه با چشم‌های قرمز، سبک سه‌بعدی سینمایی..."></textarea>
     <button class="primary" id="imageBtn">ساخت تصویر</button>
     <div class="preview" id="imagePreview"></div>
   </div>
@@ -299,19 +299,13 @@ async function callChatAPI(message) {
 
   try {
     data = JSON.parse(raw);
-  } catch (error) {
+  } catch (_) {
     data = {};
   }
 
   if (!response.ok) {
     let detail = data.error || data.message || data.detail || raw || "سرور پاسخ مشخصی نداد.";
     if (typeof detail !== "string") detail = JSON.stringify(detail);
-
-    if (data.details) {
-      const extra = typeof data.details === "string" ? data.details : JSON.stringify(data.details);
-      detail += "\nجزئیات: " + extra;
-    }
-
     throw new Error("خطای سرور (" + response.status + "): " + detail.slice(0, 1200));
   }
 
@@ -387,7 +381,7 @@ function showPreview(id, text) {
   output.classList.add("visible");
 }
 
-/* اتصال واقعی دکمه ساخت تصویر به تابع Netlify */
+/* ساخت تصویر با نمایش جزئیات واقعی خطا */
 $("imageBtn").addEventListener("click", async () => {
   const prompt = $("imagePrompt").value.trim();
   const button = $("imageBtn");
@@ -410,7 +404,8 @@ $("imageBtn").addEventListener("click", async () => {
       body: JSON.stringify({
         action: "image",
         mode: "image",
-        prompt: prompt
+        prompt: prompt,
+        message: prompt
       })
     });
 
@@ -421,26 +416,29 @@ $("imageBtn").addEventListener("click", async () => {
       data = JSON.parse(raw);
     } catch (_) {
       throw new Error(
-        "پاسخ سرور قابل خواندن نیست. وضعیت HTTP: " + response.status
+        "پاسخ سرور JSON نیست. وضعیت HTTP: " +
+        response.status +
+        "\nپاسخ واقعی سرور:\n" +
+        (raw.slice(0, 1000) || "(پاسخ خالی)")
       );
     }
 
     if (!response.ok) {
-      let detail = data.error || data.message || "خطای سرور: " + response.status;
+      let detail = data.error || data.message || data.detail || "سرور پاسخ مشخصی نداد.";
+      if (typeof detail !== "string") detail = JSON.stringify(detail);
 
-      if (data.details) {
-        const extra = typeof data.details === "string"
-          ? data.details
-          : JSON.stringify(data.details);
-        detail += "\nجزئیات: " + extra;
-      }
-
-      throw new Error(detail);
+      throw new Error(
+        "وضعیت HTTP: " + response.status +
+        "\n" + detail.slice(0, 1200)
+      );
     }
 
     if (typeof data.image !== "string" ||
         !data.image.startsWith("data:image/")) {
-      throw new Error(data.error || "تصویر معتبر از سرور دریافت نشد.");
+      throw new Error(
+        "تصویر معتبر از سرور دریافت نشد.\nپاسخ سرور:\n" +
+        JSON.stringify(data).slice(0, 1000)
+      );
     }
 
     output.replaceChildren();
@@ -470,7 +468,8 @@ $("imageBtn").addEventListener("click", async () => {
   } catch (error) {
     showPreview(
       "imagePreview",
-      "خطا در ساخت تصویر: " + (error.message || "خطای ناشناخته")
+      "خطا در ساخت تصویر:\n" +
+      (error.message || "خطای ناشناخته")
     );
     setStatus("● خطا در ساخت تصویر");
   } finally {
@@ -554,7 +553,7 @@ $("listenBtn").addEventListener("click", () => {
       }
     };
     recognition.start();
-  } catch (error) {
+  } catch (_) {
     $("voiceToolStatus").textContent = "شروع میکروفون ناموفق بود. مجوز میکروفون را بررسی کن.";
   }
 });
