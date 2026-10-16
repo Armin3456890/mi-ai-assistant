@@ -103,7 +103,7 @@ textarea:focus{border-color:#5142bb}
 <section id="image" class="tool-panel">
   <div class="card">
     <h2>🎨 ساخت تصویر</h2>
-    <p>توضیحات تصویر را وارد کن. تولید واقعی تصویر هنوز به اتصال مدل نیاز دارد.</p>
+    <p>توضیحات تصویر را وارد کن تا موتور ساخت تصویر آن را پردازش کند.</p>
     <label class="field-label" for="imagePrompt">توضیحات تصویر</label>
     <textarea class="field" id="imagePrompt" rows="4" placeholder="A black dragon with red eyes, cinematic 3D style..."></textarea>
     <button class="primary" id="imageBtn">ساخت تصویر</button>
@@ -382,15 +382,101 @@ $("clearBtn").addEventListener("click", () => {
 
 function showPreview(id, text) {
   const output = $(id);
+  output.replaceChildren();
   output.textContent = text;
   output.classList.add("visible");
 }
 
-$("imageBtn").addEventListener("click", () => {
+/* اتصال واقعی دکمه ساخت تصویر به تابع Netlify */
+$("imageBtn").addEventListener("click", async () => {
   const prompt = $("imagePrompt").value.trim();
-  showPreview("imagePreview", prompt
-    ? "توضیحات تصویر ثبت شد؛ تولید واقعی تصویر هنوز به اتصال مدل نیاز دارد."
-    : "اول توضیحات تصویر را بنویس.");
+  const button = $("imageBtn");
+  const output = $("imagePreview");
+
+  if (!prompt) {
+    showPreview("imagePreview", "اول توضیحات تصویر را بنویس.");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "در حال ساخت تصویر...";
+  showPreview("imagePreview", "درخواست ساخت تصویر ارسال شد. لطفاً منتظر بمان...");
+  setStatus("● در حال ساخت تصویر");
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        action: "image",
+        mode: "image",
+        prompt: prompt
+      })
+    });
+
+    const raw = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch (_) {
+      throw new Error(
+        "پاسخ سرور قابل خواندن نیست. وضعیت HTTP: " + response.status
+      );
+    }
+
+    if (!response.ok) {
+      let detail = data.error || data.message || "خطای سرور: " + response.status;
+
+      if (data.details) {
+        const extra = typeof data.details === "string"
+          ? data.details
+          : JSON.stringify(data.details);
+        detail += "\nجزئیات: " + extra;
+      }
+
+      throw new Error(detail);
+    }
+
+    if (typeof data.image !== "string" ||
+        !data.image.startsWith("data:image/")) {
+      throw new Error(data.error || "تصویر معتبر از سرور دریافت نشد.");
+    }
+
+    output.replaceChildren();
+
+    const title = document.createElement("p");
+    title.textContent = "تصویر ساخته شد";
+    output.appendChild(title);
+
+    const img = document.createElement("img");
+    img.src = data.image;
+    img.alt = prompt;
+    img.loading = "lazy";
+    output.appendChild(img);
+
+    const download = document.createElement("a");
+    download.href = data.image;
+    download.download = "mi-ai-image.png";
+    download.textContent = "دانلود تصویر";
+    download.style.display = "inline-block";
+    download.style.marginTop = "12px";
+    download.style.color = "#c9bcff";
+    output.appendChild(download);
+
+    output.classList.add("visible");
+    setStatus("● تصویر دریافت شد");
+
+  } catch (error) {
+    showPreview(
+      "imagePreview",
+      "خطا در ساخت تصویر: " + (error.message || "خطای ناشناخته")
+    );
+    setStatus("● خطا در ساخت تصویر");
+  } finally {
+    button.disabled = false;
+    button.textContent = "ساخت تصویر";
+  }
 });
 
 $("videoBtn").addEventListener("click", () => {
