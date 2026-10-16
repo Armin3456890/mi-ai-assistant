@@ -1,3 +1,4 @@
+
 const fetch = globalThis.fetch;
 
 const corsHeaders = {
@@ -35,13 +36,16 @@ async function readResponse(response) {
   }
 }
 
-// تبدیل توضیح فارسی تصویر به انگلیسی با Groq
-async function translateImagePrompt(prompt) {
+async function translatePrompt(prompt, kind = "image") {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
     throw new Error("کلید GROQ_API_KEY در Netlify تنظیم نشده است.");
   }
+
+  const instruction = kind === "video"
+    ? "Convert the user's request into a detailed English text-to-video prompt. Describe the scene, motion, camera movement, lighting and visual style. Preserve the user's meaning. Return only the prompt."
+    : "Convert the user's request into a detailed English image-generation prompt. Preserve the original meaning and visual details. Return only the prompt.";
 
   const response = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -54,18 +58,11 @@ async function translateImagePrompt(prompt) {
       body: JSON.stringify({
         model: "openai/gpt-oss-20b",
         messages: [
-          {
-            role: "system",
-            content:
-              "Convert the user's image request into a detailed English image-generation prompt. Preserve the original meaning and visual details. Return only the English prompt, without explanations."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
+          { role: "system", content: instruction },
+          { role: "user", content: prompt }
         ],
         temperature: 0.3,
-        max_tokens: 300
+        max_tokens: 350
       })
     }
   );
@@ -74,7 +71,7 @@ async function translateImagePrompt(prompt) {
 
   if (!response.ok) {
     throw new Error(
-      `خطای تبدیل توضیح تصویر (${response.status}): ` +
+      `خطای آماده‌سازی توضیح (${response.status}): ` +
       (data.error?.message || data.error || "خطای Groq")
     );
   }
@@ -82,7 +79,7 @@ async function translateImagePrompt(prompt) {
   const translated = data.choices?.[0]?.message?.content?.trim();
 
   if (!translated) {
-    throw new Error("توضیح انگلیسی تصویر ساخته نشد.");
+    throw new Error("توضیح انگلیسی تولید نشد.");
   }
 
   return translated;
@@ -93,12 +90,10 @@ async function generateImage(prompt) {
   const apiKey = process.env.POLLINATIONS_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "کلید POLLINATIONS_API_KEY در تنظیمات Netlify پیدا نشد."
-    );
+    throw new Error("کلید POLLINATIONS_API_KEY در Netlify پیدا نشد.");
   }
 
-  const englishPrompt = await translateImagePrompt(prompt);
+  const englishPrompt = await translatePrompt(prompt, "image");
 
   const url = new URL(
     "https://gen.pollinations.ai/image/" +
@@ -111,7 +106,6 @@ async function generateImage(prompt) {
   url.searchParams.set("nologo", "true");
 
   const response = await fetch(url.toString(), {
-    method: "GET",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       Accept: "image/*"
@@ -119,40 +113,101 @@ async function generateImage(prompt) {
   });
 
   if (!response.ok) {
-    const details = await response.text();
-
     throw new Error(
       `خطای سرویس تصویر (${response.status}): ` +
-      details.slice(0, 500)
+      (await response.text()).slice(0, 500)
     );
   }
 
-  const contentType =
-    response.headers.get("content-type") || "";
+  const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.startsWith("image/")) {
-    const details = await response.text();
-
-    throw new Error(
-      "سرویس تصویر به‌جای عکس، پاسخ دیگری فرستاد: " +
-      details.slice(0, 300)
-    );
+    throw new Error("سرویس تصویر خروجی تصویری برنگرداند.");
   }
 
-  const imageBuffer = Buffer.from(
-    await response.arrayBuffer()
-  );
+  const imageBuffer = Buffer.from(await response.arrayBuffer());
 
   if (!imageBuffer.length) {
     throw new Error("تصویر دریافتی خالی است.");
   }
 
   return {
-    image:
-      `data:${contentType};base64,` +
-      imageBuffer.toString("base64"),
+    image: `data:${contentType};base64,${imageBuffer.toString("base64")}`,
     provider: "Pollinations",
     prompt: englishPrompt
+  };
+}
+
+// ساخت ویدئو
+async function generateVideo(prompt) {
+  const apiKey = process.env.POLLINATIONS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("کلید POLLINATIONS_API_KEY در Netlify پیدا نشد.");
+  }
+
+  const englishPrompt = await translatePrompt(prompt, "video");
+
+  const url = new URL(
+    "https://gen.pollinations.ai/video/" +
+    encodeURIComponent(englishPrompt)
+  );
+
+  url.searchParams.set("model", "google/veo-3.1-fast");
+  url.searchParams.set("duration", "4");
+  url.searchParams.set("aspectRatio", "16:9");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "video/mp4"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `خطای سرویس ویدئو (${response.status}): ` +
+      (await response.text()).slice(0, 700)
+    );
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+
+  if (
+    !contentType.startsWith("video/") &&
+    !contentType.includes("octet-stream")
+  ) {
+    throw new Error(
+      "سرویس ویدئو به‌جای فایل ویدئویی، نوع محتوای دیگری فرستاد."
+    );
+  }
+
+  const videoBuffer = Buffer.from(await response.arrayBuffer());
+
+  if (!videoBuffer.length) {
+    throw new Error("فایل ویدئوی دریافتی خالی است.");
+  }
+
+  // پاسخ تابع Netlify محدودیت حجم دارد.
+  // فایل بزرگ‌تر را رد می‌کنیم تا خطای مبهم ایجاد نشود.
+  if (videoBuffer.length > 4 * 1024 * 1024) {
+    throw new Error(
+      "حجم ویدئو برای پاسخ مستقیم Netlify زیاد است. " +
+      "باید روش تحویل فایل را تغییر دهیم."
+    );
+  }
+
+  return {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "video/mp4",
+      "Content-Disposition": 'inline; filename="mi-ai-video.mp4"',
+      "Cache-Control": "no-store"
+    },
+    isBase64Encoded: true,
+    body: videoBuffer.toString("base64")
   };
 }
 
@@ -180,10 +235,7 @@ async function generateChat(prompt, history = []) {
           )
           .slice(-12)
       : []),
-    {
-      role: "user",
-      content: prompt
-    }
+    { role: "user", content: prompt }
   ];
 
   const response = await fetch(
@@ -249,24 +301,30 @@ exports.handler = async event => {
     const prompt = getPrompt(body);
 
     if (!prompt) {
-      return reply({ error: "لطفاً ابتدا پیام یا توضیح تصویر را بنویس." }, 400);
+      return reply({
+        error: "لطفاً ابتدا توضیحات را وارد کن."
+      }, 400);
     }
 
     if (action === "image") {
-      const result = await generateImage(prompt);
-      return reply(result);
+      return reply(await generateImage(prompt));
+    }
+
+    if (action === "video") {
+      return await generateVideo(prompt);
     }
 
     if (action === "chat" || action === "text") {
-      const result = await generateChat(
-        prompt,
-        body.history || body.messages || []
+      return reply(
+        await generateChat(
+          prompt,
+          body.history || body.messages || []
+        )
       );
-      return reply(result);
     }
 
     return reply({
-      error: `عملیات «${action}» هنوز در این تابع پیاده‌سازی نشده است.`
+      error: `عملیات «${action}» هنوز پیاده‌سازی نشده است.`
     }, 400);
 
   } catch (error) {
