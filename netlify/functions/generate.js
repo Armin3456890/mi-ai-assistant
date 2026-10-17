@@ -1,6 +1,7 @@
 
 const MODEL = "fal-ai/kling-video/v3/turbo/standard/text-to-video";
 const BASE_URL = "https://queue.fal.run";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 exports.handler = async (event) => {
   const headers = {
@@ -27,7 +28,6 @@ exports.handler = async (event) => {
 
   const readResponse = async (response) => {
     const raw = await response.text();
-
     try {
       return raw ? JSON.parse(raw) : {};
     } catch {
@@ -45,45 +45,75 @@ exports.handler = async (event) => {
     });
   }
 
-  const apiKey = process.env.FAL_KEY;
-
-  if (!apiKey) {
-    return reply(500, {
-      error: "کلید FAL_KEY در تنظیمات Netlify پیدا نشد."
-    });
-  }
-
   try {
     const body = JSON.parse(event.body || "{}");
     const action = body.action;
 
-    const authHeaders = {
-      Authorization: `Key ${apiKey}`,
-      "Content-Type": "application/json"
-    };
+    // چت هوشمند فارسی با OpenRouter
+    if (action === "chat") {
+      const apiKey = process.env.OPENROUTER_API_KEY;
 
-    if (action === "video") {
+      if (!apiKey) {
+        return reply(500, {
+          error: "کلید OPENROUTER_API_KEY در تنظیمات Netlify پیدا نشد."
+        });
+      }
+
       const prompt = String(body.prompt || "").trim();
 
       if (!prompt) {
         return reply(400, {
-          error: "لطفاً توضیحات ویدئو را وارد کن."
+          error: "لطفاً پیام خودت را بنویس."
         });
       }
 
-      if (prompt.length > 2500) {
+      if (prompt.length > 10000) {
         return reply(400, {
-          error: "توضیحات ویدئو باید حداکثر ۲۵۰۰ کاراکتر باشد."
+          error: "پیام بیش از حد طولانی است."
         });
       }
 
-      const response = await fetch(`${BASE_URL}/${MODEL}`, {
+      const incomingMessages = Array.isArray(body.messages)
+        ? body.messages
+            .filter((m) =>
+              m &&
+              ["user", "assistant"].includes(m.role) &&
+              typeof m.content === "string"
+            )
+            .slice(-12)
+            .map((m) => ({
+              role: m.role,
+              content: m.content.slice(0, 10000)
+            }))
+        : [];
+
+      const messages = [
+        {
+          role: "system",
+          content:
+            "تو mi.AI هستی، یک دستیار هوش مصنوعی مفید و دقیق. " +
+            "به‌طور پیش‌فرض به زبان فارسی روان پاسخ بده، مگر کاربر زبان دیگری بخواهد. " +
+            "پاسخ‌ها را روشن، کاربردی و متناسب با سؤال ارائه کن."
+        },
+        ...incomingMessages,
+        {
+          role: "user",
+          content: prompt
+        }
+      ];
+
+      const response = await fetch(OPENROUTER_URL, {
         method: "POST",
-        headers: authHeaders,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "X-OpenRouter-Title": "mi.AI"
+        },
         body: JSON.stringify({
-          prompt,
-          duration: "5",
-          aspect_ratio: "16:9"
+          model: "openrouter/free",
+          messages,
+          temperature: 0.7,
+          max_tokens: 1200
         })
       });
 
@@ -91,28 +121,92 @@ exports.handler = async (event) => {
 
       if (!response.ok) {
         return reply(response.status, {
-          error: "fal.ai درخواست ساخت ویدئو را نپذیرفت.",
+          error: "OpenRouter نتوانست پاسخ تولید کند.",
           http_status: response.status,
-          details: readable(data)
+          details: readable(data.error || data)
         });
       }
 
-      if (!data.request_id) {
+      const answer = data.choices?.[0]?.message?.content;
+
+      if (typeof answer !== "string" || !answer.trim()) {
         return reply(502, {
-          error: "شناسه درخواست از fal.ai دریافت نشد.",
-          details: readable(data)
+          error: "پاسخ متنی معتبری از مدل دریافت نشد."
         });
       }
 
       return reply(200, {
         success: true,
-        request_id: data.request_id,
-        status: "IN_QUEUE",
-        message: "درخواست ساخت ویدئو ثبت شد."
+        answer: answer.trim(),
+        model: data.model || "openrouter/free"
       });
     }
 
-    if (action === "video_status") {
+    // عملیات ویدئو و بررسی وضعیت آن با fal.ai
+    if (action === "video" || action === "video_status") {
+      const apiKey = process.env.FAL_KEY;
+
+      if (!apiKey) {
+        return reply(500, {
+          error: "کلید FAL_KEY در تنظیمات Netlify پیدا نشد."
+        });
+      }
+
+      const authHeaders = {
+        Authorization: `Key ${apiKey}`,
+        "Content-Type": "application/json"
+      };
+
+      if (action === "video") {
+        const prompt = String(body.prompt || "").trim();
+
+        if (!prompt) {
+          return reply(400, {
+            error: "لطفاً توضیحات ویدئو را وارد کن."
+          });
+        }
+
+        if (prompt.length > 2500) {
+          return reply(400, {
+            error: "توضیحات ویدئو باید حداکثر ۲۵۰۰ کاراکتر باشد."
+          });
+        }
+
+        const response = await fetch(`${BASE_URL}/${MODEL}`, {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({
+            prompt,
+            duration: "5",
+            aspect_ratio: "16:9"
+          })
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+          return reply(response.status, {
+            error: "fal.ai درخواست ساخت ویدئو را نپذیرفت.",
+            http_status: response.status,
+            details: readable(data)
+          });
+        }
+
+        if (!data.request_id) {
+          return reply(502, {
+            error: "شناسه درخواست از fal.ai دریافت نشد.",
+            details: readable(data)
+          });
+        }
+
+        return reply(200, {
+          success: true,
+          request_id: data.request_id,
+          status: "IN_QUEUE",
+          message: "درخواست ساخت ویدئو ثبت شد."
+        });
+      }
+
       const requestId = String(body.request_id || "").trim();
 
       if (!requestId) {
@@ -184,7 +278,7 @@ exports.handler = async (event) => {
 
     return reply(400, {
       error: "عملیات نامعتبر است.",
-      supported_actions: ["video", "video_status"]
+      supported_actions: ["chat", "video", "video_status"]
     });
 
   } catch (error) {
