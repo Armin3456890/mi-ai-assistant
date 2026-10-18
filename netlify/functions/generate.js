@@ -1,6 +1,7 @@
 
 const MODEL = "fal-ai/kling-video/v3/turbo/standard/text-to-video";
 const BASE_URL = "https://queue.fal.run";
+const IMAGE_URL = "https://fal.run/fal-ai/flux/schnell";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 exports.handler = async (event) => {
@@ -49,7 +50,7 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || "{}");
     const action = body.action;
 
-    // چت هوشمند فارسی با OpenRouter
+    // چت هوشمند فارسی
     if (action === "chat") {
       const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -75,13 +76,13 @@ exports.handler = async (event) => {
 
       const incomingMessages = Array.isArray(body.messages)
         ? body.messages
-            .filter((m) =>
+            .filter(m =>
               m &&
               ["user", "assistant"].includes(m.role) &&
               typeof m.content === "string"
             )
             .slice(-12)
-            .map((m) => ({
+            .map(m => ({
               role: m.role,
               content: m.content.slice(0, 10000)
             }))
@@ -91,15 +92,11 @@ exports.handler = async (event) => {
         {
           role: "system",
           content:
-            "تو mi.AI هستی، یک دستیار هوش مصنوعی مفید و دقیق. " +
-            "به‌طور پیش‌فرض به زبان فارسی روان پاسخ بده، مگر کاربر زبان دیگری بخواهد. " +
-            "پاسخ‌ها را روشن، کاربردی و متناسب با سؤال ارائه کن."
+            "تو mi.AI هستی، یک دستیار هوش مصنوعی دقیق و مفید. " +
+            "به طور پیش‌فرض به فارسی روان پاسخ بده."
         },
         ...incomingMessages,
-        {
-          role: "user",
-          content: prompt
-        }
+        { role: "user", content: prompt }
       ];
 
       const response = await fetch(OPENROUTER_URL, {
@@ -142,7 +139,74 @@ exports.handler = async (event) => {
       });
     }
 
-    // عملیات ویدئو و بررسی وضعیت آن با fal.ai
+    // ساخت تصویر با fal.ai
+    if (action === "image") {
+      const apiKey = process.env.FAL_KEY;
+
+      if (!apiKey) {
+        return reply(500, {
+          error: "کلید FAL_KEY در تنظیمات Netlify پیدا نشد."
+        });
+      }
+
+      const prompt = String(body.prompt || "").trim();
+
+      if (!prompt) {
+        return reply(400, {
+          error: "لطفاً توضیحات تصویر را وارد کن."
+        });
+      }
+
+      if (prompt.length > 2500) {
+        return reply(400, {
+          error: "توضیحات تصویر باید حداکثر ۲۵۰۰ کاراکتر باشد."
+        });
+      }
+
+      const response = await fetch(IMAGE_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Key ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt,
+          image_size: "landscape_4_3",
+          num_images: 1,
+          output_format: "jpeg",
+          enable_safety_checker: true
+        })
+      });
+
+      const data = await readResponse(response);
+
+      if (!response.ok) {
+        return reply(response.status, {
+          error: "fal.ai نتوانست تصویر را بسازد.",
+          http_status: response.status,
+          details: readable(data)
+        });
+      }
+
+      const imageUrl = data.images?.[0]?.url;
+
+      if (!imageUrl) {
+        return reply(502, {
+          error: "لینک تصویر در پاسخ fal.ai پیدا نشد.",
+          details: readable(data)
+        });
+      }
+
+      return reply(200, {
+        success: true,
+        image: {
+          url: imageUrl
+        },
+        message: "تصویر با موفقیت ساخته شد."
+      });
+    }
+
+    // ساخت ویدئو و بررسی وضعیت آن
     if (action === "video" || action === "video_status") {
       const apiKey = process.env.FAL_KEY;
 
@@ -194,7 +258,7 @@ exports.handler = async (event) => {
 
         if (!data.request_id) {
           return reply(502, {
-            error: "شناسه درخواست از fal.ai دریافت نشد.",
+            error: "شناسه درخواست ویدئو دریافت نشد.",
             details: readable(data)
           });
         }
@@ -250,7 +314,7 @@ exports.handler = async (event) => {
 
         if (!videoUrl) {
           return reply(502, {
-            error: "لینک ویدئو در پاسخ fal.ai پیدا نشد.",
+            error: "لینک ویدئو پیدا نشد.",
             details: readable(resultData)
           });
         }
@@ -278,7 +342,12 @@ exports.handler = async (event) => {
 
     return reply(400, {
       error: "عملیات نامعتبر است.",
-      supported_actions: ["chat", "video", "video_status"]
+      supported_actions: [
+        "chat",
+        "image",
+        "video",
+        "video_status"
+      ]
     });
 
   } catch (error) {
@@ -288,3 +357,4 @@ exports.handler = async (event) => {
     });
   }
 };
+        
